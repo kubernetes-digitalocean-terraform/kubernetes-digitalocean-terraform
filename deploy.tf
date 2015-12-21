@@ -167,10 +167,15 @@ resource "template_file" "worker_yaml" {
 #
 ###############################################################################
 
+variable "worker_count" {
+    default = 3
+}
 
-resource "digitalocean_droplet" "k8s_worker_01" {
+resource "digitalocean_droplet" "k8s_worker" {
+    count = "${var.worker_count}"
+
     image = "coreos-alpha"
-    name = "k8s-worker-01"
+    name = "${format("k8s-worker-%02d", count.index + 1)}"
     region = "nyc3"
     size = "512mb"
     private_networking = true
