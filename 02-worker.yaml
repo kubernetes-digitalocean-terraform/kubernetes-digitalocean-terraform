@@ -1,0 +1,102 @@
+#cloud-config
+
+write_files:
+  - path: "/etc/kubernetes/manifests/kube-proxy.yaml"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: kube-proxy
+        namespace: kube-system
+      spec:
+        hostNetwork: true
+        containers:
+        - name: kube-proxy
+          image: gcr.io/google_containers/hyperkube:v1.1.2
+          command:
+          - /hyperkube
+          - proxy
+          - --master=https://${MASTER_HOST}
+          - --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml
+          - --proxy-mode=iptables
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - mountPath: /etc/ssl/certs
+              name: "ssl-certs"
+            - mountPath: /etc/kubernetes/worker-kubeconfig.yaml
+              name: "kubeconfig"
+              readOnly: true
+            - mountPath: /etc/kubernetes/ssl
+              name: "etc-kube-ssl"
+              readOnly: true
+        volumes:
+          - name: "ssl-certs"
+            hostPath:
+              path: "/usr/share/ca-certificates"
+          - name: "kubeconfig"
+            hostPath:
+              path: "/etc/kubernetes/worker-kubeconfig.yaml"
+          - name: "etc-kube-ssl"
+            hostPath:
+              path: "/etc/kubernetes/ssl"
+
+  - path: "/etc/kubernetes/worker-kubeconfig.yaml"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      apiVersion: v1
+      kind: Config
+      clusters:
+      - name: local
+        cluster:
+          certificate-authority: /etc/kubernetes/ssl/ca.pem
+      users:
+      - name: kubelet
+        user:
+          client-certificate: /etc/kubernetes/ssl/worker.pem
+          client-key: /etc/kubernetes/ssl/worker-key.pem
+      contexts:
+      - context:
+          cluster: local
+          user: kubelet
+        name: kubelet-context
+      current-context: kubelet-context
+
+coreos:
+  flannel:
+    iface: $private_ipv4
+    etcd_endpoints: http://${ETCD_IP}:2379
+
+  units:
+    - name: flanneld.service
+      command: start
+    - name: docker.service
+      command: start
+      drop-ins:
+        - name: "40-flannel.conf"
+          content: |
+            [Unit]
+            Require=flanneld.service
+            After=flanneld.service
+    - name: kubelet.service
+      content: |
+        [Service]
+        ExecStart=/usr/bin/kubelet \
+          --api_servers=https://${MASTER_HOST} \
+          --register-node=true \
+          --allow-privileged=true \
+          --config=/etc/kubernetes/manifests \
+          --hostname-override=$private_ipv4 \
+          --cluster-dns=${DNS_SERVICE_IP} \
+          --cluster-domain=cluster.local \
+          --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
+          --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
+          --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem
+        Restart=always
+        RestartSec=10
+        [Install]
+        WantedBy=multi-user.target
+

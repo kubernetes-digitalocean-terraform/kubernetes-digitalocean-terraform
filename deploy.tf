@@ -143,3 +143,88 @@ resource "digitalocean_droplet" "k8s_master" {
     }
 }
 
+
+###############################################################################
+#
+# Worker host's user data template
+#
+###############################################################################
+
+
+resource "template_file" "worker_yaml" {
+    template = "${file("02-worker.yaml")}"
+    vars {
+        DNS_SERVICE_IP = "11.1.2.10"
+        ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_private}"
+        MASTER_HOST = "${digitalocean_droplet.k8s_master.ipv4_address_private}"
+    }
+}
+
+
+###############################################################################
+#
+# Worker hosts
+#
+###############################################################################
+
+
+resource "digitalocean_droplet" "k8s_worker_01" {
+    image = "coreos-alpha"
+    name = "k8s-worker-01"
+    region = "nyc3"
+    size = "512mb"
+    private_networking = true
+    user_data = "${template_file.worker_yaml.rendered}"
+    ssh_keys = [
+        "${var.ssh_fingerprint}"
+    ]
+
+    # Provision Master's TLS Assets
+    provisioner "file" {
+        source = "./secrets/ca.pem"
+        destination = "/home/core/ca.pem"
+        connection {
+            user = "core"
+        }
+    }
+
+    provisioner "file" {
+        source = "./secrets/apiserver.pem"
+        destination = "/home/core/worker.pem"
+        connection {
+            user = "core"
+        }
+    }
+
+    provisioner "file" {
+        source = "./secrets/apiserver-key.pem"
+        destination = "/home/core/worker-key.pem"
+        connection {
+            user = "core"
+        }
+    }
+
+    provisioner "remote-exec" {
+        inline = [
+            "sudo mkdir -p /etc/kubernetes/ssl",
+            "sudo mv /home/core/{ca,worker,worker-key}.pem /etc/kubernetes/ssl/.",
+            "sudo chmod 600 /etc/kubernetes/ssl/*-key.pem",
+            "sudo chown root:root /etc/kubernetes/ssl/*-key.pem"
+        ]
+        connection {
+            user = "core"
+        }
+    }
+
+    # Start kubelet and create kube-system namespace
+    provisioner "remote-exec" {
+        inline = [
+            "sudo systemctl start kubelet",
+            "sudo systemctl enable kubelet"
+        ]
+        connection {
+            user = "core"
+        }
+    }
+}
+
