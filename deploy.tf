@@ -60,7 +60,7 @@ resource "template_file" "master_yaml" {
     template = "${file("01-master.yaml")}"
     vars {
         DNS_SERVICE_IP = "11.1.2.10"
-        ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_public}"
+        ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address}"
         K8S_SERVICE_IP = "11.1.2.1"
         POD_NETWORK = "10.2.0.0/16"
         SERVICE_IP_RANGE = "11.1.2.0/24"
@@ -89,7 +89,7 @@ resource "digitalocean_droplet" "k8s_master" {
     provisioner "local-exec" {
         command = <<EOF
             $PWD/secrets/generate-tls-assets.sh \
-              ${digitalocean_droplet.k8s_master.ipv4_address_public}
+              ${digitalocean_droplet.k8s_master.ipv4_address}
 EOF
     }
 
@@ -156,8 +156,8 @@ resource "template_file" "worker_yaml" {
     template = "${file("02-worker.yaml")}"
     vars {
         DNS_SERVICE_IP = "11.1.2.10"
-        ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_public}"
-        MASTER_HOST = "${digitalocean_droplet.k8s_master.ipv4_address_public}"
+        ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address}"
+        MASTER_HOST = "${digitalocean_droplet.k8s_master.ipv4_address}"
     }
 }
 
@@ -243,7 +243,7 @@ resource "digitalocean_droplet" "k8s_worker" {
 resource "null_resource" "kubectl" {
     provisioner "local-exec" {
         command = <<EOF
-            echo export MASTER_HOST=${digitalocean_droplet.k8s_master.ipv4_address_public} > $PWD/secrets/setup_kubectl.sh
+            echo export MASTER_HOST=${digitalocean_droplet.k8s_master.ipv4_address} > $PWD/secrets/setup_kubectl.sh
             echo export CA_CERT=$PWD/secrets/ca.pem >> $PWD/secrets/setup_kubectl.sh
             echo export ADMIN_KEY=$PWD/secrets/admin-key.pem >> $PWD/secrets/setup_kubectl.sh
             echo export ADMIN_CERT=$PWD/secrets/admin.pem >> $PWD/secrets/setup_kubectl.sh
