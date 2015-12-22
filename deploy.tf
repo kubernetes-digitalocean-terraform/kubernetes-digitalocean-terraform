@@ -240,17 +240,18 @@ resource "digitalocean_droplet" "k8s_worker" {
 ###############################################################################
 
 
-resource "null_resource" "kubectl" {
+resource "null_resource" "setup_kubectl" {
     provisioner "local-exec" {
         command = <<EOF
             echo export MASTER_HOST=${digitalocean_droplet.k8s_master.ipv4_address} > $PWD/secrets/setup_kubectl.sh
             echo export CA_CERT=$PWD/secrets/ca.pem >> $PWD/secrets/setup_kubectl.sh
             echo export ADMIN_KEY=$PWD/secrets/admin-key.pem >> $PWD/secrets/setup_kubectl.sh
             echo export ADMIN_CERT=$PWD/secrets/admin.pem >> $PWD/secrets/setup_kubectl.sh
-            source $PWD/secrets/setup_kubectl.sh
-            kubectl config set-cluster default-cluster --server=https://${MASTER_HOST} --certificate-authority=${CA_CERT}
+            . $PWD/secrets/setup_kubectl.sh
+            kubectl config set-cluster default-cluster \
+                --server=https://$MASTER_HOST --certificate-authority=$CA_CERT
             kubectl config set-credentials default-admin \
-              --certificate-authority=${CA_CERT} --client-key=${ADMIN_KEY} --client-certificate=${ADMIN_CERT}
+                 --certificate-authority=$CA_CERT --client-key=$ADMIN_KEY --client-certificate=$ADMIN_CERT
             kubectl config set-context default-system --cluster=default-cluster --user=default-admin
             kubectl config use-context default-system
 EOF
