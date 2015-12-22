@@ -89,7 +89,7 @@ resource "digitalocean_droplet" "k8s_master" {
 
     # Node created, let's generate the TLS assets
     provisioner "local-exec" {
-        command = "./secrets/generate-tls-assets.sh ${digitalocean_droplet.k8s_master.ipv4_address_private}" 
+        command = "./secrets/generate-tls-assets.sh ${digitalocean_droplet.k8s_master.ipv4_address_private} ${digitalocean_droplet.k8s_master.ipv4_address_public}"
     }
 
     # Provision Master's TLS Assets
@@ -230,6 +230,30 @@ resource "digitalocean_droplet" "k8s_worker" {
         connection {
             user = "core"
         }
+    }
+}
+
+###############################################################################
+#
+# Make config file and export variables for kubectl
+#
+###############################################################################
+
+
+resource "null_resource" "kubectl" {
+    provisioner "local-exec" {
+        command = <<EOF
+            echo export MASTER_HOST=${digitalocean_droplet.k8s_master.ipv4_address_public} > $PWD/secrets/setup_kubectl.sh
+            echo export CA_CERT=$PWD/secrets/ca.pem >> $PWD/secrets/setup_kubectl.sh
+            echo export ADMIN_KEY=$PWD/secrets/admin-key.pem >> $PWD/secrets/setup_kubectl.sh
+            echo export ADMIN_CERT=$PWD/secrets/admin.pem >> $PWD/secrets/setup_kubectl.sh
+            source $PWD/secrets/setup_kubectl.sh
+            kubectl config set-cluster default-cluster --server=https://${MASTER_HOST} --certificate-authority=${CA_CERT}
+            kubectl config set-credentials default-admin \
+              --certificate-authority=${CA_CERT} --client-key=${ADMIN_KEY} --client-certificate=${ADMIN_CERT}
+            kubectl config set-context default-system --cluster=default-cluster --user=default-admin
+            kubectl config use-context default-system
+EOF
     }
 }
 
