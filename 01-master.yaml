@@ -23,7 +23,7 @@ write_files:
           - --allow-privileged=true
           - --service-cluster-ip-range=${SERVICE_IP_RANGE}
           - --secure-port=443
-          - --advertise-address=$private_ipv4
+          - --advertise-address=$public_ipv4
           - --admission-control=NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
@@ -99,7 +99,7 @@ write_files:
           - /podmaster
           - --etcd-servers=http://${ETCD_IP}:2379
           - --key=scheduler
-          - --whoami=$private_ipv4
+          - --whoami=$public_ipv4
           - --source-file=/src/manifests/kube-scheduler.yaml
           - --dest-file=/dst/manifests/kube-scheduler.yaml
           volumeMounts:
@@ -114,7 +114,7 @@ write_files:
           - /podmaster
           - --etcd-servers=http://${ETCD_IP}:2379
           - --key=controller
-          - --whoami=$private_ipv4
+          - --whoami=$public_ipv4
           - --source-file=/src/manifests/kube-controller-manager.yaml
           - --dest-file=/dst/manifests/kube-controller-manager.yaml
           terminationMessagePath: /dev/termination-log
@@ -202,7 +202,7 @@ write_files:
 
 coreos:
   flannel:
-    iface: $private_ipv4
+    iface: $public_ipv4
     etcd_endpoints: http://${ETCD_IP}:2379
   units:
     - name: flanneld.service
@@ -229,7 +229,7 @@ coreos:
           --register-node=false \
           --allow-privileged=true \
           --config=/etc/kubernetes/manifests \
-          --hostname-override=$private_ipv4 \
+          --hostname-override=$public_ipv4 \
           --cluster-dns=${DNS_SERVICE_IP} \
           --cluster-domain=cluster.local
         Restart=always

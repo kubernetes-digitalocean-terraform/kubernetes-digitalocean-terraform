@@ -42,7 +42,6 @@ resource "digitalocean_droplet" "k8s_etcd" {
     name = "k8s-etcd"
     region = "nyc3"
     size = "512mb"
-    private_networking = true
     user_data = "${file("00-etcd.yaml")}"
     ssh_keys = [
         "${var.ssh_fingerprint}"
@@ -61,7 +60,7 @@ resource "template_file" "master_yaml" {
     template = "${file("01-master.yaml")}"
     vars {
         DNS_SERVICE_IP = "11.1.2.10"
-        ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_private}"
+        ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_public}"
         K8S_SERVICE_IP = "11.1.2.1"
         POD_NETWORK = "10.2.0.0/16"
         SERVICE_IP_RANGE = "11.1.2.0/24"
@@ -81,7 +80,6 @@ resource "digitalocean_droplet" "k8s_master" {
     name = "k8s-master"
     region = "nyc3"
     size = "512mb"
-    private_networking = true
     user_data = "${template_file.master_yaml.rendered}"
     ssh_keys = [
         "${var.ssh_fingerprint}"
@@ -89,7 +87,10 @@ resource "digitalocean_droplet" "k8s_master" {
 
     # Node created, let's generate the TLS assets
     provisioner "local-exec" {
-        command = "./secrets/generate-tls-assets.sh ${digitalocean_droplet.k8s_master.ipv4_address_private} ${digitalocean_droplet.k8s_master.ipv4_address_public}"
+        command = <<EOF
+            $PWD/secrets/generate-tls-assets.sh \
+              ${digitalocean_droplet.k8s_master.ipv4_address_public}
+EOF
     }
 
     # Provision Master's TLS Assets
@@ -155,8 +156,8 @@ resource "template_file" "worker_yaml" {
     template = "${file("02-worker.yaml")}"
     vars {
         DNS_SERVICE_IP = "11.1.2.10"
-        ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_private}"
-        MASTER_HOST = "${digitalocean_droplet.k8s_master.ipv4_address_private}"
+        ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_public}"
+        MASTER_HOST = "${digitalocean_droplet.k8s_master.ipv4_address_public}"
     }
 }
 
@@ -178,7 +179,6 @@ resource "digitalocean_droplet" "k8s_worker" {
     name = "${format("k8s-worker-%02d", count.index + 1)}"
     region = "nyc3"
     size = "512mb"
-    private_networking = true
     user_data = "${template_file.worker_yaml.rendered}"
     ssh_keys = [
         "${var.ssh_fingerprint}"

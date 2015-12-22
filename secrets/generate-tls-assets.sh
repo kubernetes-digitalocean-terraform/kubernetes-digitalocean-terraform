@@ -15,8 +15,7 @@ SECRETS_DIR=$PWD/secrets
 openssl genrsa -out $SECRETS_DIR/ca-key.pem 2048
 openssl req -x509 -new -nodes -key $SECRETS_DIR/ca-key.pem -days 10000 -out $SECRETS_DIR/ca.pem -subj "/CN=kube-ca"
 
-sed -e "s/\${MASTER_HOST_PVT_IP}/$1/" < $SECRETS_DIR/openssl.cnf.template > $SECRETS_DIR/openssl.cnf
-sed -e "s/\${MASTER_HOST_PUB_IP}/$2/" < $SECRETS_DIR/openssl.cnf.template > $SECRETS_DIR/openssl.cnf
+sed -e "s/\${MASTER_HOST}/$1/" < $SECRETS_DIR/openssl.cnf.template > $SECRETS_DIR/openssl.cnf
 
 openssl genrsa -out $SECRETS_DIR/apiserver-key.pem 2048
 openssl req -new -key $SECRETS_DIR/apiserver-key.pem -out $SECRETS_DIR/apiserver.csr -subj "/CN=kube-apiserver" -config $SECRETS_DIR/openssl.cnf
