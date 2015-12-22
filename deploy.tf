@@ -169,7 +169,7 @@ resource "template_file" "worker_yaml" {
 ###############################################################################
 
 variable "worker_count" {
-    default = 3
+    default = 6
 }
 
 resource "digitalocean_droplet" "k8s_worker" {
