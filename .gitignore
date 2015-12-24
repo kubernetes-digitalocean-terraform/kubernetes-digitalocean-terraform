@@ -1,6 +1,11 @@
 secrets/
+
 *.swp
+
 *.tfstate
 *.tfstate.backup
+
 .srl
+
+04-dns-addon.yaml.rendered
 

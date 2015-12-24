@@ -258,3 +258,12 @@ EOF
     }
 }
 
+resource "null_resource" "deploy_dns_addon" {
+    provisioner "local-exec" {
+        command = <<EOF
+            sed -e "s/\$DNS_SERVICE_IP/11.1.2.10/" < 04-dns-addon.yaml > 04-dns-addon.yaml.rendered
+            kubectl create -f 04-dns-addon.yaml.rendered
+EOF
+    }
+}
+

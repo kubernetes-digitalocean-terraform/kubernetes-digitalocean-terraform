@@ -179,6 +179,10 @@ NAME          LABELS                               STATUS
 X.X.X.X       kubernetes.io/hostname=X.X.X.X       Ready
 ```
 
+### Deploy DNS Add-on
+
+The file `04-dns-addon.yaml` will be rendered (i.e. replace the value `DNS_SERVICE_IP`), and then `kubectl` will create the Service and Replication Controller.
+
 ### Conclusion
 
 I've spent a number of hours doing this the "hard way" (i.e. could have done the `just one click` install that google cloud offers, or just the `kick the tires` one with containers in your host). But in the end, I got a better understanding on the basic moving parts of a pack `coreOS`/`kubernetes`. Plus, I got to use and understand `terraform`, which is neat to setup your environment in just one commmand. Once you tame this beast of course.
