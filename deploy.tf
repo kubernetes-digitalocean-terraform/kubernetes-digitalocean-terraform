@@ -241,6 +241,7 @@ resource "digitalocean_droplet" "k8s_worker" {
 
 
 resource "null_resource" "setup_kubectl" {
+    depends_on = ["digitalocean_droplet.k8s_worker"]
     provisioner "local-exec" {
         command = <<EOF
             echo export MASTER_HOST=${digitalocean_droplet.k8s_master.ipv4_address} > $PWD/secrets/setup_kubectl.sh
@@ -259,9 +260,11 @@ EOF
 }
 
 resource "null_resource" "deploy_dns_addon" {
+    depends_on = ["null_resource.setup_kubectl"]
     provisioner "local-exec" {
         command = <<EOF
             sed -e "s/\$DNS_SERVICE_IP/11.1.2.10/" < 04-dns-addon.yaml > 04-dns-addon.yaml.rendered
+            until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
             kubectl create -f 04-dns-addon.yaml.rendered
 EOF
     }
