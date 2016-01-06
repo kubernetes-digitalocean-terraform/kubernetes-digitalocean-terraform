@@ -37,9 +37,10 @@ ssh-add ~/.ssh/id_rsa
 
 We put our Digitalocean token in the file `./secrets/DO_TOKEN` (that directory is mentioned in `.gitignore`, of course, so we don't leak it)
 
-Then we setup the environment variables (step into `this repository` root)
+Then we setup the environment variables (step into `this repository` root). Note that the first variable sets up the *number of workers*
 
 ```bash
+export TF_VAR_number_of_workers=3
 export TF_VAR_do_token=$(cat ./secrets/DO_TOKEN)
 export TF_VAR_pub_key="~/.ssh/id_rsa.pub"
 export TF_VAR_pvt_key="~/.ssh/id_rsa"
@@ -55,7 +56,7 @@ export TF_VAR_ssh_fingerprint=$(ssh-keygen -E MD5 -lf ~/.ssh/id_rsa.pub | awk '{
 There is a convenience file for you in `./hack/setup_terraform.sh`. Invoke it as
 
 ```bash
-source ./hack/setup_terraform.sh
+. ./hack/setup_terraform.sh
 ```
 
 After setup, call `terraform apply`
@@ -75,8 +76,6 @@ X.X.X.X       kubernetes.io/hostname=X.X.X.X       Ready
 You are good to go. Now, we can keep on reading to dive into the specifics.
 
 ## Deploy details
-
-We are going to dive into the specifics
 
 ### K8s etcd host
 
