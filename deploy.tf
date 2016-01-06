@@ -88,7 +88,7 @@ resource "digitalocean_droplet" "k8s_master" {
     # Node created, let's generate the TLS assets
     provisioner "local-exec" {
         command = <<EOF
-            $PWD/secrets/generate-tls-assets.sh \
+            $PWD/hack/generate-tls-assets.sh \
               ${digitalocean_droplet.k8s_master.ipv4_address}
 EOF
     }

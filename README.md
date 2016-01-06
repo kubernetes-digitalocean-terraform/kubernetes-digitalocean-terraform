@@ -1,20 +1,16 @@
 # K8s - Digital Ocean - Terraform
 
-My study on `How to deploy the K8s cluster in DO using terraform`. Lowering the entry barrier one step at a time.
+Deploy your Kubernetes cluster in Digital Ocean using Terraform.
 
 ## Disclaimer
 
-This is an experimental configuration I made to study infrastructures, I haven't tested in production.
-
-## Credits
-
-Read [the official guide of coreos/kubernetes](https://coreos.com/kubernetes/docs/latest/getting-started.html).
+Not tested in production yet. Use it at your own risk.
 
 ## Requirements
 
-* Digital Ocean account
-* DO Token [Here](https://cloud.digitalocean.com/settings/tokens/new)
-* Install Terraform.
+* [Digital Ocean](https://www.digitalocean.com/) account
+* DO Token [In DO's settings/tokens/new](https://cloud.digitalocean.com/settings/tokens/new)
+* [Terraform](https://www.terraform.io/)
 
 Do all the following steps from a development machine. It does not matter _where_ is it, as long as it is connected to the internet. This one will be subsequently used to access the cluster via `kubectl`.
 
@@ -39,7 +35,7 @@ ssh-add ~/.ssh/id_rsa
 
 ## Invoke terraform
 
-We put our Digitalocean token in the file `DO_TOKEN` (mentioned in `.gitignore`, of course, so we don't leak it)
+We put our Digitalocean token in the file `./secrets/DO_TOKEN` (that directory is mentioned in `.gitignore`, of course, so we don't leak it)
 
 Then we setup the environment variables (step into `this repository` root)
 
@@ -56,13 +52,31 @@ If you are using OSX, replace the last line with
 export TF_VAR_ssh_fingerprint=$(ssh-keygen -E MD5 -lf ~/.ssh/id_rsa.pub | awk '{print $2}' | sed 's/MD5://g')
 ```
 
-And call `terraform apply`
+There is a convenience file for you in `./hack/setup_terraform.sh`. Invoke it as
+
+```bash
+source ./hack/setup_terraform.sh
+```
+
+After setup, call `terraform apply`
 
 ```bash
 terraform apply
 ```
 
+That should do! `kubectl` is configured, so you can just
+
+```bash
+$ kubectl get nodes
+NAME          LABELS                               STATUS
+X.X.X.X       kubernetes.io/hostname=X.X.X.X       Ready
+```
+
+You are good to go. Now, we can keep on reading to dive into the specifics.
+
 ## Deploy details
+
+We are going to dive into the specifics
 
 ### K8s etcd host
 
