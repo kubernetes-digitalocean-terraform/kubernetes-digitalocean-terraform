@@ -65,12 +65,23 @@ After setup, call `terraform apply`
 terraform apply
 ```
 
-That should do! `kubectl` is configured, so you can just
+That should do! `kubectl` is configured, so you can just check the nodes (`get no`) and the pods (`get po`).
 
 ```bash
-$ kubectl get nodes
+$ kubectl get no
 NAME          LABELS                               STATUS
-X.X.X.X       kubernetes.io/hostname=X.X.X.X       Ready
+X.X.X.X   kubernetes.io/hostname=X.X.X.X   Ready     2m
+Y.Y.Y.Y   kubernetes.io/hostname=Y.Y.Y.Y   Ready     2m
+
+$ kubectl --namespace=kube-system get po
+NAME                                   READY     STATUS    RESTARTS   AGE
+kube-apiserver-X.X.X.X            1/1       Running   0          1m
+kube-controller-manager-X.X.X.X   1/1       Running   0          1m
+kube-dns-v9-heab2                 4/4       Running   0          56s
+kube-podmaster-X.X.X.X            2/2       Running   0          2m
+kube-proxy-Y.Y.Y.Y                1/1       Running   0          34s
+kube-proxy-X.X.X.X                1/1       Running   0          2m
+kube-scheduler-X.X.X.X            1/1       Running   0          1m
 ```
 
 You are good to go. Now, we can keep on reading to dive into the specifics.

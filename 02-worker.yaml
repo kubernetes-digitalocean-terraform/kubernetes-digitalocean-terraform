@@ -1,6 +1,29 @@
 #cloud-config
 
 write_files:
+  - path: "/opt/bin/download-k8s-binary"
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+
+      K8S_VERSION=v1.1.2
+
+      mkdir -p /opt/bin
+
+      FILE=$$1
+      if [ ! -f /opt/bin/$$FILE ]; then
+        curl -sSL -o /opt/bin/$$FILE https://storage.googleapis.com/kubernetes-release/release/$${K8S_VERSION}/bin/linux/amd64/$$FILE
+        chmod +x /opt/bin/$$FILE
+      else
+        # we check the version of the binary
+        INSTALLED_VERSION=$$(/opt/bin/$$FILE --version)
+        MATCH=$$(echo "$${INSTALLED_VERSION}" | grep -c "$${K8S_VERSION}")
+        if [ $$MATCH -eq 0 ]; then
+          # the version is different
+          curl -sSL -o /opt/bin/$$FILE https://storage.googleapis.com/kubernetes-release/release/$${K8S_VERSION}/bin/linux/amd64/$$FILE
+          chmod +x /opt/bin/$$FILE
+        fi
+      fi
   - path: "/etc/kubernetes/manifests/kube-proxy.yaml"
     permissions: "0644"
     owner: "root"
@@ -82,21 +105,25 @@ coreos:
             Require=flanneld.service
             After=flanneld.service
     - name: kubelet.service
+      command: start
       content: |
+        # /usr/lib64/systemd/system/kubelet.service
+        [Unit]
+        Description=Kubernetes Kubelet
         [Service]
-        ExecStart=/usr/bin/kubelet \
-          --api_servers=https://${MASTER_HOST} \
-          --register-node=true \
+        ExecStartPre=/bin/bash -c "/opt/bin/download-k8s-binary kubelet"
+        ExecStart=/opt/bin/kubelet \
           --allow-privileged=true \
+          --api_servers=https://${MASTER_HOST} \
+          --cluster-dns=${DNS_SERVICE_IP} \
           --config=/etc/kubernetes/manifests \
           --hostname-override=$public_ipv4 \
-          --cluster-dns=${DNS_SERVICE_IP} \
-          --cluster-domain=cluster.local \
           --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
+          --register-node=true \
           --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
           --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem
-        Restart=always
-        RestartSec=10
+        Restart=on-failure
+        RestartSec=5
         [Install]
         WantedBy=multi-user.target
 

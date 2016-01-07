@@ -39,7 +39,7 @@ provider "digitalocean" {
 
 
 resource "digitalocean_droplet" "k8s_etcd" {
-    image = "coreos-alpha"
+    image = "coreos-stable"
     name = "k8s-etcd"
     region = "nyc3"
     size = "512mb"
@@ -77,7 +77,7 @@ resource "template_file" "master_yaml" {
 
 
 resource "digitalocean_droplet" "k8s_master" {
-    image = "coreos-alpha"
+    image = "coreos-stable"
     name = "k8s-master"
     region = "nyc3"
     size = "512mb"
@@ -173,7 +173,7 @@ resource "template_file" "worker_yaml" {
 resource "digitalocean_droplet" "k8s_worker" {
     count = "${var.number_of_workers}"
 
-    image = "coreos-alpha"
+    image = "coreos-stable"
     name = "${format("k8s-worker-%02d", count.index + 1)}"
     region = "nyc3"
     size = "512mb"
