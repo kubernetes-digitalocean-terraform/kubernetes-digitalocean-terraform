@@ -1,11 +1,13 @@
+# This directory is meant for TLS/SSL assets, DO_TOKEN, etc
 secrets/
 
-*.swp
-
-*.tfstate
-*.tfstate.backup
-
+# This one is consequence of the TLS/SSL assets generation
 .srl
 
-04-dns-addon.yaml.rendered
+# For VIM Users
+*.swp
+
+# Terraform assets
+*.tfstate
+*.tfstate.backup
 

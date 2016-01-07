@@ -261,9 +261,9 @@ resource "null_resource" "deploy_dns_addon" {
     depends_on = ["null_resource.setup_kubectl"]
     provisioner "local-exec" {
         command = <<EOF
-            sed -e "s/\$DNS_SERVICE_IP/11.1.2.10/" < 04-dns-addon.yaml > 04-dns-addon.yaml.rendered
+            sed -e "s/\$DNS_SERVICE_IP/11.1.2.10/" < 03-dns-addon.yaml > ./secrets/03-dns-addon.yaml.rendered
             until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
-            kubectl create -f 04-dns-addon.yaml.rendered
+            kubectl create -f ./secrets/03-dns-addon.yaml.rendered
 EOF
     }
 }
