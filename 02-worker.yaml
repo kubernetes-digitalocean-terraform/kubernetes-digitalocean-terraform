@@ -116,6 +116,7 @@ coreos:
           --allow-privileged=true \
           --api_servers=https://${MASTER_HOST} \
           --cluster-dns=${DNS_SERVICE_IP} \
+          --cluster_domain=cluster.local \
           --config=/etc/kubernetes/manifests \
           --hostname-override=$public_ipv4 \
           --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
