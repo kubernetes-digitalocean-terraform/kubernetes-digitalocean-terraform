@@ -95,7 +95,6 @@ coreos:
 
   units:
     - name: flanneld.service
-      command: start
       content: |
         [Unit]
         Description=Network fabric for containers
@@ -134,19 +133,22 @@ coreos:
           quay.io/coreos/flannel:$${FLANNEL_VER} \
           /opt/bin/mk-docker-opts.sh -d /run/flannel_docker_opts.env -i
     - name: docker.service
-      command: start
       drop-ins:
         - name: "40-flannel.conf"
           content: |
             [Unit]
-            Require=flanneld.service
+            Requires=flanneld.service
             After=flanneld.service
+
+            [Service]
+            Restart=always
+            Restart=on-failure
     - name: kubelet.service
-      command: start
       content: |
         # /usr/lib64/systemd/system/kubelet.service
         [Unit]
         Description=Kubernetes Kubelet
+
         [Service]
         ExecStartPre=/bin/bash -c "/opt/bin/download-k8s-binary kubelet"
         ExecStart=/opt/bin/kubelet \
@@ -162,6 +164,6 @@ coreos:
           --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem
         Restart=on-failure
         RestartSec=5
+
         [Install]
         WantedBy=multi-user.target
-

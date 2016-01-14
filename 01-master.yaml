@@ -229,7 +229,6 @@ coreos:
     etcd_endpoints: http://${ETCD_IP}:2379
   units:
     - name: flanneld.service
-      command: start
       content: |
         [Unit]
         Description=Network fabric for containers
@@ -273,19 +272,22 @@ coreos:
             [Service]
             ExecStartPre=/usr/bin/curl -X PUT -d "value={\"Network\":\"${POD_NETWORK}\",\"Backend\":{\"Type\":\"vxlan\"}}" http://${ETCD_IP}:2379/v2/keys/coreos.com/network/config
     - name: docker.service
-      command: start
       drop-ins:
         - name: "40-flannel.conf"
           content: |
             [Unit]
-            Require=flanneld.service
+            Requires=flanneld.service
             After=flanneld.service
+
+            [Service]
+            Restart=always
+            Restart=on-failure
     - name: kubelet.service
-      command: start
       content: |
         # /usr/lib64/systemd/system/kubelet.service
         [Unit]
         Description=Kubernetes Kubelet
+
         [Service]
         ExecStartPre=/bin/bash -c "/opt/bin/download-k8s-binary kubelet"
         ExecStart=/opt/bin/kubelet \
@@ -298,5 +300,6 @@ coreos:
          --hostname-override=$public_ipv4
         Restart=on-failure
         RestartSec=5
+
         [Install]
         WantedBy=multi-user.target
