@@ -6,7 +6,7 @@ write_files:
     content: |
       #!/bin/bash
 
-      K8S_VERSION=v1.1.2
+      K8S_VERSION=v1.1.4
 
       mkdir -p /opt/bin
 
