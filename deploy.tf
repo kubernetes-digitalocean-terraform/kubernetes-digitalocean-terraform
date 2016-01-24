@@ -60,11 +60,11 @@ resource "digitalocean_droplet" "k8s_etcd" {
 resource "template_file" "master_yaml" {
     template = "${file("01-master.yaml")}"
     vars {
-        DNS_SERVICE_IP = "11.1.2.10"
+        DNS_SERVICE_IP = "10.3.0.10"
         ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address}"
-        K8S_SERVICE_IP = "11.1.2.1"
+        K8S_SERVICE_IP = "10.3.0.1"
         POD_NETWORK = "10.2.0.0/16"
-        SERVICE_IP_RANGE = "11.1.2.0/24"
+        SERVICE_IP_RANGE = "10.3.0.0/24"
     }
 }
 
@@ -156,7 +156,7 @@ EOF
 resource "template_file" "worker_yaml" {
     template = "${file("02-worker.yaml")}"
     vars {
-        DNS_SERVICE_IP = "11.1.2.10"
+        DNS_SERVICE_IP = "10.3.0.10"
         ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address}"
         MASTER_HOST = "${digitalocean_droplet.k8s_master.ipv4_address}"
     }
@@ -261,7 +261,7 @@ resource "null_resource" "deploy_dns_addon" {
     depends_on = ["null_resource.setup_kubectl"]
     provisioner "local-exec" {
         command = <<EOF
-            sed -e "s/\$DNS_SERVICE_IP/11.1.2.10/" < 03-dns-addon.yaml > ./secrets/03-dns-addon.yaml.rendered
+            sed -e "s/\$DNS_SERVICE_IP/10.3.0.10/" < 03-dns-addon.yaml > ./secrets/03-dns-addon.yaml.rendered
             until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
             kubectl create -f ./secrets/03-dns-addon.yaml.rendered
 EOF

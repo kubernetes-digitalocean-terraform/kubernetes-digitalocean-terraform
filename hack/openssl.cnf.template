@@ -11,5 +11,4 @@ DNS.1 = kubernetes
 DNS.2 = kubernetes.default
 IP.1 = 10.3.0.1
 IP.2 = ${MASTER_HOST}
-IP.3 = 11.1.2.1
 
