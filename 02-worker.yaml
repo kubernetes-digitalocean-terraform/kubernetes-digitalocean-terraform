@@ -6,7 +6,7 @@ write_files:
     content: |
       #!/bin/bash
 
-      K8S_VERSION=v1.1.4
+      K8S_VERSION=v1.2.0
 
       mkdir -p /opt/bin
 
@@ -37,7 +37,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-proxy
-          image: gcr.io/google_containers/hyperkube:v1.1.2
+          image: gcr.io/google_containers/hyperkube:v1.2.0
           command:
           - /hyperkube
           - proxy

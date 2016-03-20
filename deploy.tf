@@ -137,7 +137,7 @@ EOF
             "sudo systemctl start kubelet",
             "sudo systemctl enable kubelet",
             "until $(curl --output /dev/null --silent --head --fail http://127.0.0.1:8080); do printf '.'; sleep 5; done",
-            "curl -XPOST -d'{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"name\":\"kube-system\"}}' http://127.0.0.1:8080/api/v1/namespaces"
+            "curl -XPOST -H 'Content-type: application/json' -d'{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"name\":\"kube-system\"}}' http://127.0.0.1:8080/api/v1/namespaces"
         ]
         connection {
             user = "core"
@@ -219,7 +219,7 @@ resource "digitalocean_droplet" "k8s_worker" {
         }
     }
 
-    # Start kubelet and create kube-system namespace
+    # Start kubelet
     provisioner "remote-exec" {
         inline = [
             "sudo systemctl start kubelet",
@@ -267,4 +267,18 @@ resource "null_resource" "deploy_dns_addon" {
 EOF
     }
 }
+
+resource "null_resource" "deploy_microbot" {
+    depends_on = ["null_resource.setup_kubectl"]
+    provisioner "local-exec" {
+        command = <<EOF
+            sed -e "s/\$EXT_IP1/${digitalocean_droplet.k8s_worker.0.ipv4_address}/" < 04-microbot.yaml > ./secrets/04-microbot.yaml.rendered
+            until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
+            kubectl create -f ./secrets/04-microbot.yaml.rendered
+
+EOF
+    }
+}
+
+
 

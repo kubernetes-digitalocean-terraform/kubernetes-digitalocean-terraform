@@ -24,22 +24,22 @@ spec:
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  name: kube-dns-v9
+  name: kube-dns-v11
   namespace: kube-system
   labels:
     k8s-app: kube-dns
-    version: v9
+    version: v11
     kubernetes.io/cluster-service: "true"
 spec:
   replicas: 1
   selector:
     k8s-app: kube-dns
-    version: v9
+    version: v11
   template:
     metadata:
       labels:
         k8s-app: kube-dns
-        version: v9
+        version: v11
         kubernetes.io/cluster-service: "true"
     spec:
       containers:
