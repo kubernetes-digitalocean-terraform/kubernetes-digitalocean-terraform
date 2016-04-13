@@ -1,4 +1,4 @@
-# K8s - Digital Ocean - Terraform
+# Kubernetes - Digital Ocean - Terraform
 
 Deploy your Kubernetes cluster in Digital Ocean using Terraform.
 
@@ -9,7 +9,7 @@ Not tested in production yet. Use it at your own risk.
 ## Requirements
 
 * [Digital Ocean](https://www.digitalocean.com/) account
-* DO Token [In DO's settings/tokens/new](https://cloud.digitalocean.com/settings/tokens/new)
+* Digital Ocean Token [In DO's settings/tokens/new](https://cloud.digitalocean.com/settings/tokens/new)
 * [Terraform](https://www.terraform.io/)
 
 Do all the following steps from a development machine. It does not matter _where_ is it, as long as it is connected to the internet. This one will be subsequently used to access the cluster via `kubectl`.
