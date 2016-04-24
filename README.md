@@ -207,9 +207,8 @@ X.X.X.X       kubernetes.io/hostname=X.X.X.X       Ready
 
 The file `03-dns-addon.yaml` will be rendered (i.e. replace the value `DNS_SERVICE_IP`), and then `kubectl` will create the Service and Replication Controller.
 
-
 ### Deploy microbot with External IP
 
 The file `04-microbot.yaml` will be rendered (i.e. replace the value `EXT_IP1`), and then `kubectl` will create the Service and Replication Controller.
 
-To see the IP of the service, run `kubectl get svc` and look for the EXTERNAL-IP (should be the first worker's ext-ip). 
+To see the IP of the service, run `kubectl get svc` and look for the `EXTERNAL-IP` (should be the first worker's ext-ip).
