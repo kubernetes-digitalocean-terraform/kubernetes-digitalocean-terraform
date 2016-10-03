@@ -57,7 +57,7 @@ resource "digitalocean_droplet" "k8s_etcd" {
 ###############################################################################
 
 
-resource "template_file" "master_yaml" {
+data "template_file" "master_yaml" {
     template = "${file("01-master.yaml")}"
     vars {
         DNS_SERVICE_IP = "10.3.0.10"
@@ -81,7 +81,7 @@ resource "digitalocean_droplet" "k8s_master" {
     name = "k8s-master"
     region = "nyc3"
     size = "512mb"
-    user_data = "${template_file.master_yaml.rendered}"
+    user_data = "${data.template_file.master_yaml.rendered}"
     ssh_keys = [
         "${var.ssh_fingerprint}"
     ]
@@ -153,7 +153,7 @@ EOF
 ###############################################################################
 
 
-resource "template_file" "worker_yaml" {
+data "template_file" "worker_yaml" {
     template = "${file("02-worker.yaml")}"
     vars {
         DNS_SERVICE_IP = "10.3.0.10"
@@ -177,7 +177,7 @@ resource "digitalocean_droplet" "k8s_worker" {
     name = "${format("k8s-worker-%02d", count.index + 1)}"
     region = "nyc3"
     size = "512mb"
-    user_data = "${template_file.worker_yaml.rendered}"
+    user_data = "${data.template_file.worker_yaml.rendered}"
     ssh_keys = [
         "${var.ssh_fingerprint}"
     ]
