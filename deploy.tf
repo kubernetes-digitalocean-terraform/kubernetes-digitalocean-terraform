@@ -147,7 +147,7 @@ resource "digitalocean_droplet" "k8s_master" {
     # Generate k8s_master server certificate
     provisioner "local-exec" {
         command = <<EOF
-            $PWD/cfssl/generate_server.sh k8s_master ${digitalocean_droplet.k8s_master.ipv4_address}
+            $PWD/cfssl/generate_server.sh k8s_master "${digitalocean_droplet.k8s_master.ipv4_address},10.3.0.1,kubernetes.default,kubernetes"
 EOF
     }
 
@@ -318,8 +318,6 @@ EOF
             "sudo systemctl start flanneld",
             "sudo systemctl enable flanneld",
             "sudo systemctl start kubelet",
-            "sudo systemctl enable kubelet",
-            "sudo systemctl start kubelet",
             "sudo systemctl enable kubelet"
         ]
         connection {
@@ -363,24 +361,13 @@ EOF
     }
 }
 
-resource "null_resource" "deploy_dns_addon" {
-    depends_on = ["null_resource.setup_kubectl"]
-    provisioner "local-exec" {
-        command = <<EOF
-            sed -e "s/\$DNS_SERVICE_IP/10.3.0.10/" < 03-dns-addon.yaml > ./secrets/03-dns-addon.rendered.yaml
-            until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
-            kubectl create -f ./secrets/03-dns-addon.rendered.yaml
-EOF
-    }
-}
-
 resource "null_resource" "deploy_microbot" {
     depends_on = ["null_resource.setup_kubectl"]
     provisioner "local-exec" {
         command = <<EOF
-            sed -e "s/\$EXT_IP1/${digitalocean_droplet.k8s_worker.0.ipv4_address}/" < 04-microbot.yaml > ./secrets/04-microbot.rendered.yaml
+            sed -e "s/\$EXT_IP1/${digitalocean_droplet.k8s_worker.0.ipv4_address}/" < 03-microbot.yaml > ./secrets/04-microbot.rendered.yaml
             until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
-            kubectl create -f ./secrets/04-microbot.rendered.yaml
+            kubectl create -f ./secrets/03-microbot.rendered.yaml
 
 EOF
     }

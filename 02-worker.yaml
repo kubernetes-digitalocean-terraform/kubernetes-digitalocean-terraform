@@ -2,6 +2,12 @@
 
 
 write_files:
+  - path: "/etc/profile.env"
+    content: |
+        export ENABLE_CLUSTER_DNS="true"
+        export DNS_SERVER_IP="10.3.0.10"
+        export DNS_DOMAIN="cluster.local"
+        export DNS_REPLICAS=1
   - path: "/etc/flannel/options.env"
     permissions: "0755"
     content: |
