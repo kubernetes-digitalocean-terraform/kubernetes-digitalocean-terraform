@@ -13,8 +13,6 @@
 
 
 variable "do_token" {}
-variable "pub_key" {}
-variable "pvt_key" {}
 variable "ssh_fingerprint" {}
 variable "number_of_workers" {}
 
@@ -47,6 +45,65 @@ resource "digitalocean_droplet" "k8s_etcd" {
     ssh_keys = [
         "${var.ssh_fingerprint}"
     ]
+
+    # Generate the Certificate Authority
+    provisioner "local-exec" {
+        command = <<EOF
+            $PWD/cfssl/generate_ca.sh
+EOF
+    }
+
+    # Generate k8s-etcd server certificate
+    provisioner "local-exec" {
+        command = <<EOF
+            $PWD/cfssl/generate_server.sh k8s_etcd ${digitalocean_droplet.k8s_etcd.ipv4_address}
+EOF
+    }
+
+    # Provision k8s_etcd server certificate
+    provisioner "file" {
+        source = "./secrets/ca.pem"
+        destination = "/home/core/ca.pem"
+        connection {
+            user = "core"
+        }
+    }
+    provisioner "file" {
+        source = "./secrets/k8s_etcd.pem"
+        destination = "/home/core/etcd.pem"
+        connection {
+            user = "core"
+        }
+    }
+    provisioner "file" {
+        source = "./secrets/k8s_etcd-key.pem"
+        destination = "/home/core/etcd-key.pem"
+        connection {
+            user = "core"
+        }
+    }
+
+    # TODO: figure out etcd2 user and chown, chmod key.pem files
+    provisioner "remote-exec" {
+        inline = [
+            "sudo mkdir -p /etc/kubernetes/ssl",
+            "sudo mv /home/core/{ca,etcd,etcd-key}.pem /etc/kubernetes/ssl/."
+        ]
+        connection {
+            user = "core"
+        }
+    }
+
+    # Start etcd2
+    provisioner "remote-exec" {
+        inline = [
+            "sudo systemctl start etcd2",
+            "sudo systemctl enable etcd2",
+        ]
+        connection {
+            user = "core"
+        }
+    }
 }
 
 
@@ -57,12 +114,11 @@ resource "digitalocean_droplet" "k8s_etcd" {
 ###############################################################################
 
 
-resource "template_file" "master_yaml" {
+data "template_file" "master_yaml" {
     template = "${file("01-master.yaml")}"
     vars {
         DNS_SERVICE_IP = "10.3.0.10"
         ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address}"
-        K8S_SERVICE_IP = "10.3.0.1"
         POD_NETWORK = "10.2.0.0/16"
         SERVICE_IP_RANGE = "10.3.0.0/24"
     }
@@ -81,20 +137,19 @@ resource "digitalocean_droplet" "k8s_master" {
     name = "k8s-master"
     region = "nyc3"
     size = "512mb"
-    user_data = "${template_file.master_yaml.rendered}"
+    user_data = "${data.template_file.master_yaml.rendered}"
     ssh_keys = [
         "${var.ssh_fingerprint}"
     ]
 
-    # Node created, let's generate the TLS assets
+    # Generate k8s_master server certificate
     provisioner "local-exec" {
         command = <<EOF
-            $PWD/hack/generate-tls-assets.sh \
-              ${digitalocean_droplet.k8s_master.ipv4_address}
+            $PWD/cfssl/generate_server.sh k8s_master "${digitalocean_droplet.k8s_master.ipv4_address},10.3.0.1,kubernetes.default,kubernetes"
 EOF
     }
 
-    # Provision Master's TLS Assets
+    # Provision k8s_etcd server certificate
     provisioner "file" {
         source = "./secrets/ca.pem"
         destination = "/home/core/ca.pem"
@@ -102,29 +157,52 @@ EOF
             user = "core"
         }
     }
-
     provisioner "file" {
-        source = "./secrets/apiserver.pem"
+        source = "./secrets/k8s_master.pem"
         destination = "/home/core/apiserver.pem"
         connection {
             user = "core"
         }
     }
-
     provisioner "file" {
-        source = "./secrets/apiserver-key.pem"
+        source = "./secrets/k8s_master-key.pem"
         destination = "/home/core/apiserver-key.pem"
         connection {
             user = "core"
         }
     }
 
+    # Generate k9s_master client certificate
+    provisioner "local-exec" {
+        command = <<EOF
+            $PWD/cfssl/generate_client.sh k8s_master
+EOF
+    }
+
+    # Provision k8s_master client certificate
+    provisioner "file" {
+        source = "./secrets/client-k8s_master.pem"
+        destination = "/home/core/client.pem"
+        connection {
+            user = "core"
+        }
+    }
+    provisioner "file" {
+        source = "./secrets/client-k8s_master-key.pem"
+        destination = "/home/core/client-key.pem"
+        connection {
+            user = "core"
+        }
+    }
+
+    # TODO: figure out permissions and chown, chmod key.pem files
     provisioner "remote-exec" {
         inline = [
             "sudo mkdir -p /etc/kubernetes/ssl",
-            "sudo mv /home/core/{ca,apiserver,apiserver-key}.pem /etc/kubernetes/ssl/.",
-            "sudo chmod 600 /etc/kubernetes/ssl/*-key.pem",
-            "sudo chown root:root /etc/kubernetes/ssl/*-key.pem"
+            "sudo cp /home/core/{ca,apiserver,apiserver-key,client,client-key}.pem /etc/kubernetes/ssl/.",
+            "rm /home/core/{apiserver,apiserver-key}.pem",
+            "sudo mkdir -p /etc/ssl/etcd",
+            "sudo mv /home/core/{ca,client,client-key}.pem /etc/ssl/etcd/.",
         ]
         connection {
             user = "core"
@@ -134,6 +212,10 @@ EOF
     # Start kubelet and create kube-system namespace
     provisioner "remote-exec" {
         inline = [
+            "sudo systemctl daemon-reload",
+            "curl --cacert /etc/kubernetes/ssl/ca.pem --cert /etc/kubernetes/ssl/client.pem --key /etc/kubernetes/ssl/client-key.pem -X PUT -d 'value={\"Network\":\"10.2.0.0/16\",\"Backend\":{\"Type\":\"vxlan\"}}' https://${digitalocean_droplet.k8s_etcd.ipv4_address}:2379/v2/keys/coreos.com/network/config",
+            "sudo systemctl start flanneld",
+            "sudo systemctl enable flanneld",
             "sudo systemctl start kubelet",
             "sudo systemctl enable kubelet",
             "until $(curl --output /dev/null --silent --head --fail http://127.0.0.1:8080); do printf '.'; sleep 5; done",
@@ -153,7 +235,7 @@ EOF
 ###############################################################################
 
 
-resource "template_file" "worker_yaml" {
+data "template_file" "worker_yaml" {
     template = "${file("02-worker.yaml")}"
     vars {
         DNS_SERVICE_IP = "10.3.0.10"
@@ -177,12 +259,21 @@ resource "digitalocean_droplet" "k8s_worker" {
     name = "${format("k8s-worker-%02d", count.index + 1)}"
     region = "nyc3"
     size = "512mb"
-    user_data = "${template_file.worker_yaml.rendered}"
+    user_data = "${data.template_file.worker_yaml.rendered}"
     ssh_keys = [
         "${var.ssh_fingerprint}"
     ]
 
-    # Provision Master's TLS Assets
+
+
+    # Generate k8s_worker client certificate
+    provisioner "local-exec" {
+        command = <<EOF
+            $PWD/cfssl/generate_client.sh k8s_worker
+EOF
+    }
+
+    # Provision k8s_master client certificate
     provisioner "file" {
         source = "./secrets/ca.pem"
         destination = "/home/core/ca.pem"
@@ -190,29 +281,28 @@ resource "digitalocean_droplet" "k8s_worker" {
             user = "core"
         }
     }
-
     provisioner "file" {
-        source = "./secrets/apiserver.pem"
+        source = "./secrets/client-k8s_worker.pem"
         destination = "/home/core/worker.pem"
         connection {
             user = "core"
         }
     }
-
     provisioner "file" {
-        source = "./secrets/apiserver-key.pem"
+        source = "./secrets/client-k8s_worker-key.pem"
         destination = "/home/core/worker-key.pem"
         connection {
             user = "core"
         }
     }
 
+    # TODO: permissions on these keys
     provisioner "remote-exec" {
         inline = [
             "sudo mkdir -p /etc/kubernetes/ssl",
-            "sudo mv /home/core/{ca,worker,worker-key}.pem /etc/kubernetes/ssl/.",
-            "sudo chmod 600 /etc/kubernetes/ssl/*-key.pem",
-            "sudo chown root:root /etc/kubernetes/ssl/*-key.pem"
+            "sudo cp /home/core/{ca,worker,worker-key}.pem /etc/kubernetes/ssl/.",
+            "sudo mkdir -p /etc/ssl/etcd/",
+            "sudo mv /home/core/{ca,worker,worker-key}.pem /etc/ssl/etcd/."
         ]
         connection {
             user = "core"
@@ -222,6 +312,9 @@ resource "digitalocean_droplet" "k8s_worker" {
     # Start kubelet
     provisioner "remote-exec" {
         inline = [
+            "sudo systemctl daemon-reload",
+            "sudo systemctl start flanneld",
+            "sudo systemctl enable flanneld",
             "sudo systemctl start kubelet",
             "sudo systemctl enable kubelet"
         ]
@@ -238,8 +331,17 @@ resource "digitalocean_droplet" "k8s_worker" {
 ###############################################################################
 
 
-resource "null_resource" "setup_kubectl" {
+resource "null_resource" "make_admin_key" {
     depends_on = ["digitalocean_droplet.k8s_worker"]
+    provisioner "local-exec" {
+        command = <<EOF
+            $PWD/cfssl/generate_admin.sh
+EOF
+    }
+}
+ 
+resource "null_resource" "setup_kubectl" {
+    depends_on = ["null_resource.make_admin_key"]
     provisioner "local-exec" {
         command = <<EOF
             echo export MASTER_HOST=${digitalocean_droplet.k8s_master.ipv4_address} > $PWD/secrets/setup_kubectl.sh
@@ -257,24 +359,13 @@ EOF
     }
 }
 
-resource "null_resource" "deploy_dns_addon" {
-    depends_on = ["null_resource.setup_kubectl"]
-    provisioner "local-exec" {
-        command = <<EOF
-            sed -e "s/\$DNS_SERVICE_IP/10.3.0.10/" < 03-dns-addon.yaml > ./secrets/03-dns-addon.rendered.yaml
-            until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
-            kubectl create -f ./secrets/03-dns-addon.rendered.yaml
-EOF
-    }
-}
-
 resource "null_resource" "deploy_microbot" {
     depends_on = ["null_resource.setup_kubectl"]
     provisioner "local-exec" {
         command = <<EOF
-            sed -e "s/\$EXT_IP1/${digitalocean_droplet.k8s_worker.0.ipv4_address}/" < 04-microbot.yaml > ./secrets/04-microbot.rendered.yaml
+            sed -e "s/\$EXT_IP1/${digitalocean_droplet.k8s_worker.0.ipv4_address}/" < 03-microbot.yaml > ./secrets/03-microbot.rendered.yaml
             until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
-            kubectl create -f ./secrets/04-microbot.rendered.yaml
+            kubectl create -f ./secrets/03-microbot.rendered.yaml
 
 EOF
     }
