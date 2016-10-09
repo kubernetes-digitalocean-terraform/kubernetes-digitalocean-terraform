@@ -13,6 +13,14 @@ Not tested in production yet. Use it at your own risk.
 * [Terraform](https://www.terraform.io/)
 * CloudFlare's PKI/TLS toolkit [cfssl](https://github.com/cloudflare/cfssl)
 
+#### On Mac
+
+With brew installed, both terraform and cfssl can be installed with
+
+```bash
+brew install kubectl cfssl
+```
+
 Do all the following steps from a development machine. It does not matter _where_ is it, as long as it is connected to the internet. This one will be subsequently used to access the cluster via `kubectl`.
 
 ## Generate private / public keys
@@ -80,16 +88,19 @@ You are good to go. Now, we can keep on reading to dive into the specifics.
 
 ## Deploy details
 
-These scripts are mostly taken from the (CoreOS + Kubernetes Step by Step)[https://coreos.com/kubernetes/docs/latest/getting-started.html] guide, with the addition of SSL/TLS and client certificate authentication for etcd2. 
-Please read the step by step guide for detailed documentation.
+These scripts are mostly taken from the [CoreOS + Kubernetes Step by Step](https://coreos.com/kubernetes/docs/latest/getting-started.html) guide, with the addition of SSL/TLS and client certificate authentication for etcd2. 
 
-### K8s etcd host
+Certificate generation is covered in more detail by CoreOS's [Generate self-signed certificates](https://coreos.com/os/docs/latest/generate-self-signed-certificates.html) documentation.
 
-A dedicated tls secured etcd2 host for Kubernetes.
+These resources are excellent starting places for more in depth documentation. Below is an overview of the cluster.
+
+### K8s etcd
+
+A dedicated host running a tls secured + authenticated etcd2 instance for Kubernetes.
 
 #### Cloud config
 
-Configuration specified and etcd2.service started.
+See the template `00-etcd.yaml`.
 
 ### K8s master
 
@@ -104,21 +115,19 @@ The cluster master, running:
 
 #### Cloud config
 
-##### Files
-
-Lots of files written using `write_files`, see `01-master.yaml`.
+See the template `01-master.yaml`.
 
 #### Provisions
 
-Once we create this droplet (and get its `IP`), the TLS assets will be created locally (i.e. the development machine from we run `terraform`), and put into the directory `secrets` (which, again, is mentioned in `.gitignore`). These consist of a pair of server key and certificate for the apiserver, as well as a pair of client key and certificate for etcd2 authentication.
+Once we create this droplet (and get its `IP`), the TLS assets will be created locally (i.e. the development machine from we run `terraform`), and put into the directory `secrets` (which, again, is mentioned in `.gitignore`). The tls assets consist of a server key and certificate for the apiserver, as well as a client key and certificate to authenticate flanneld and the apiserver to etcd2.
 
 The TLS assets are copied to appropriate directories on the K8s master using Terraform `file` and `remote-exec` provisioners.
 
-Finally, we start `kubelet`, _enable_ it and create the `kube-system` namespace.
+Lastly, we start and enable both `kubelet` and `flanneld`, and finally create the `kube-system` namespace.
 
 ### K8s workers
 
-Cluster worker nodes, running:
+Cluster worker nodes, each running:
 
 * flanneld
 * kubelet
@@ -127,21 +136,19 @@ Cluster worker nodes, running:
 
 #### Cloud config
 
-##### Files
+See the template `02-worker.yaml`.
 
-Lots of files written using `write_files`, see `02-worker.yaml`.
-
-### Provisions
+#### Provisions
 
 For each droplet created, a TLS client key and certificate will be created locally (i.e. on the development machine from we run `terraform`), and put into the directory `secrets` (which, again, is mentioned in `.gitignore`). 
 
 The TLS assets are then copied to appropriate directories on the worker using Terraform `file` and `remote-exec` provisioners.
 
-Finally, we start `kubelet`, _enable_ it.
+Finally, we start and enable `kubelet` and `flanneld`.
 
 ### Setup `kubectl`
 
-After the installation is complete, `terraform` will config `kubectl` for you. The environment variables will be stored in the file `secrets/setup_kubectl.sh`.
+After the installation is complete, `terraform` will configure `kubectl` for you. The environment variables will be stored in the file `secrets/setup_kubectl.sh`.
 
 Test your brand new cluster
 
@@ -159,6 +166,6 @@ X.X.X.X       kubernetes.io/hostname=X.X.X.X       Ready
 
 ### Deploy microbot with External IP
 
-The file `03-microbot.yaml` will be rendered (i.e. replace the value `EXT_IP1`), and then `kubectl` will create the Service and Replication Controller.
+The file `04-microbot.yaml` will be rendered (i.e. replace the value `EXT_IP1`), and then `kubectl` will create the Service and Replication Controller.
 
 To see the IP of the service, run `kubectl get svc` and look for the `EXTERNAL-IP` (should be the first worker's ext-ip).
