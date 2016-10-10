@@ -15,10 +15,10 @@ Not tested in production yet. Use it at your own risk.
 
 #### On Mac
 
-With brew installed, both terraform and cfssl can be installed with
+With brew installed, all tools can be installed with
 
 ```bash
-brew install kubectl cfssl
+brew install terraform cfssl kubectl 
 ```
 
 Do all the following steps from a development machine. It does not matter _where_ is it, as long as it is connected to the internet. This one will be subsequently used to access the cluster via `kubectl`.
