@@ -51,6 +51,11 @@ Then we setup the environment variables (step into `this repository` root). Note
 ```bash
 export TF_VAR_number_of_workers=3
 export TF_VAR_do_token=$(cat ./secrets/DO_TOKEN)
+export TF_VAR_ssh_fingerprint=$(ssh-keygen -E MD5 -lf ~/.ssh/id_rsa.pub | awk '{print $2}' | sed 's/MD5://g')
+```
+
+If you are using an older version of OpenSSH (<6.9), replace the last line with
+```bash
 export TF_VAR_ssh_fingerprint=$(ssh-keygen -lf ~/.ssh/id_rsa.pub | awk '{print $2}')
 ```
 
