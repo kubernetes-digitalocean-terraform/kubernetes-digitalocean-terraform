@@ -2,10 +2,6 @@
 
 Deploy your Kubernetes cluster in Digital Ocean using Terraform.
 
-## Disclaimer
-
-Not tested in production yet. Use it at your own risk.
-
 ## Requirements
 
 * [Digital Ocean](https://www.digitalocean.com/) account
