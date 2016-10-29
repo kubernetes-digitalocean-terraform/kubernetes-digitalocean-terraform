@@ -61,6 +61,12 @@ There is a convenience script for you in `./setup_terraform.sh`. Invoke it as
 . ./setup_terraform.sh
 ```
 
+You can customize the datacenter *region* via:
+```bash
+export TF_VAR_do_region=fra1
+```
+Default is `nyc3`. You can find a list at [digitialocean](https://developers.digitalocean.com/documentation/v2/#list-all-regions).
+
 After setup, call `terraform apply`
 
 ```bash

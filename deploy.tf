@@ -13,9 +13,11 @@
 
 
 variable "do_token" {}
+variable "do_region" {
+    default = "nyc3"
+}
 variable "ssh_fingerprint" {}
 variable "number_of_workers" {}
-
 
 ###############################################################################
 #
@@ -39,7 +41,7 @@ provider "digitalocean" {
 resource "digitalocean_droplet" "k8s_etcd" {
     image = "coreos-stable"
     name = "k8s-etcd"
-    region = "nyc3"
+    region = "${var.do_region}"
     size = "512mb"
     user_data = "${file("00-etcd.yaml")}"
     ssh_keys = [
@@ -135,7 +137,7 @@ data "template_file" "master_yaml" {
 resource "digitalocean_droplet" "k8s_master" {
     image = "coreos-stable"
     name = "k8s-master"
-    region = "nyc3"
+    region = "${var.do_region}"
     size = "512mb"
     user_data = "${data.template_file.master_yaml.rendered}"
     ssh_keys = [
@@ -257,7 +259,7 @@ resource "digitalocean_droplet" "k8s_worker" {
 
     image = "coreos-stable"
     name = "${format("k8s-worker-%02d", count.index + 1)}"
-    region = "nyc3"
+    region = "${var.do_region}"
     size = "512mb"
     user_data = "${data.template_file.worker_yaml.rendered}"
     ssh_keys = [
