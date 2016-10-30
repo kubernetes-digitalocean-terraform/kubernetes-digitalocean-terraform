@@ -7,6 +7,7 @@ export TF_VAR_do_token=$(cat ./secrets/DO_TOKEN)
 
 # ssh -V prints to stderr, redirect
 ssh_ver=$(ssh -V 2>&1)
+[[ -n $ZSH_VERSION ]] && setopt KSH_ARRAYS BASH_REMATCH
 [[ $ssh_ver =~ OpenSSH_([0-9][.][0-9]) ]] && version="${BASH_REMATCH[1]}"
 # if ssh version is under 6.9, use -lf, otherwise must use the -E version
 if ! awk -v ver="$version" 'BEGIN { if (ver < 6.9) exit 1; }'; then
