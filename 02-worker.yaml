@@ -28,7 +28,7 @@ write_files:
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
         ExecStartPre=/usr/bin/mkdir -p /var/log/containers
 
-        Environment=KUBELET_VERSION=v1.3.6_coreos.0
+        Environment=KUBELET_VERSION=${HYPERCUBE_VERSION}
         Environment="RKT_OPTS=--volume var-log,kind=host,source=/var/log \
           --mount volume=var-log,target=/var/log \
           --volume dns,kind=host,source=/etc/resolv.conf \
@@ -62,7 +62,7 @@ write_files:
           hostNetwork: true
           containers:
           - name: kube-proxy
-            image: quay.io/coreos/hyperkube:v1.3.6_coreos.0
+            image: quay.io/coreos/hyperkube:${HYPERCUBE_VERSION}
             command:
             - /hyperkube
             - proxy

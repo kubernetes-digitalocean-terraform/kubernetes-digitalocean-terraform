@@ -18,7 +18,9 @@ variable "do_region" {
 }
 variable "ssh_fingerprint" {}
 variable "number_of_workers" {}
-
+variable "hypercube_version" {
+    default = "v1.3.6_coreos.0"
+}
 ###############################################################################
 #
 # Specify provider
@@ -123,6 +125,7 @@ data "template_file" "master_yaml" {
         ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address}"
         POD_NETWORK = "10.2.0.0/16"
         SERVICE_IP_RANGE = "10.3.0.0/24"
+        HYPERCUBE_VERSION = "${var.hypercube_version}"
     }
 }
 
@@ -243,6 +246,7 @@ data "template_file" "worker_yaml" {
         DNS_SERVICE_IP = "10.3.0.10"
         ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address}"
         MASTER_HOST = "${digitalocean_droplet.k8s_master.ipv4_address}"
+        HYPERCUBE_VERSION = "${var.hypercube_version}"
     }
 }
 
