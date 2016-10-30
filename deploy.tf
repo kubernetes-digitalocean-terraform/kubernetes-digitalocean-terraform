@@ -44,6 +44,7 @@ resource "digitalocean_droplet" "k8s_etcd" {
     image = "coreos-stable"
     name = "k8s-etcd"
     region = "${var.do_region}"
+    private_networking = true
     size = "512mb"
     user_data = "${file("00-etcd.yaml")}"
     ssh_keys = [
@@ -60,7 +61,7 @@ EOF
     # Generate k8s-etcd server certificate
     provisioner "local-exec" {
         command = <<EOF
-            $PWD/cfssl/generate_server.sh k8s_etcd ${digitalocean_droplet.k8s_etcd.ipv4_address}
+            $PWD/cfssl/generate_server.sh k8s_etcd ${digitalocean_droplet.k8s_etcd.ipv4_address_private}
 EOF
     }
 
@@ -122,7 +123,7 @@ data "template_file" "master_yaml" {
     template = "${file("01-master.yaml")}"
     vars {
         DNS_SERVICE_IP = "10.3.0.10"
-        ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address}"
+        ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_private}"
         POD_NETWORK = "10.2.0.0/16"
         SERVICE_IP_RANGE = "10.3.0.0/24"
         HYPERCUBE_VERSION = "${var.hypercube_version}"
@@ -141,6 +142,7 @@ resource "digitalocean_droplet" "k8s_master" {
     image = "coreos-stable"
     name = "k8s-master"
     region = "${var.do_region}"
+    private_networking = true
     size = "512mb"
     user_data = "${data.template_file.master_yaml.rendered}"
     ssh_keys = [
@@ -177,7 +179,7 @@ EOF
         }
     }
 
-    # Generate k9s_master client certificate
+    # Generate k8s_master client certificate
     provisioner "local-exec" {
         command = <<EOF
             $PWD/cfssl/generate_client.sh k8s_master
@@ -218,7 +220,7 @@ EOF
     provisioner "remote-exec" {
         inline = [
             "sudo systemctl daemon-reload",
-            "curl --cacert /etc/kubernetes/ssl/ca.pem --cert /etc/kubernetes/ssl/client.pem --key /etc/kubernetes/ssl/client-key.pem -X PUT -d 'value={\"Network\":\"10.2.0.0/16\",\"Backend\":{\"Type\":\"vxlan\"}}' https://${digitalocean_droplet.k8s_etcd.ipv4_address}:2379/v2/keys/coreos.com/network/config",
+            "curl --cacert /etc/kubernetes/ssl/ca.pem --cert /etc/kubernetes/ssl/client.pem --key /etc/kubernetes/ssl/client-key.pem -X PUT -d 'value={\"Network\":\"10.2.0.0/16\",\"Backend\":{\"Type\":\"vxlan\"}}' https://${digitalocean_droplet.k8s_etcd.ipv4_address_private}:2379/v2/keys/coreos.com/network/config",
             "sudo systemctl start flanneld",
             "sudo systemctl enable flanneld",
             "sudo systemctl start kubelet",
@@ -244,7 +246,7 @@ data "template_file" "worker_yaml" {
     template = "${file("02-worker.yaml")}"
     vars {
         DNS_SERVICE_IP = "10.3.0.10"
-        ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address}"
+        ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_private}"
         MASTER_HOST = "${digitalocean_droplet.k8s_master.ipv4_address}"
         HYPERCUBE_VERSION = "${var.hypercube_version}"
     }
@@ -260,11 +262,11 @@ data "template_file" "worker_yaml" {
 
 resource "digitalocean_droplet" "k8s_worker" {
     count = "${var.number_of_workers}"
-
     image = "coreos-stable"
     name = "${format("k8s-worker-%02d", count.index + 1)}"
     region = "${var.do_region}"
     size = "512mb"
+    private_networking = true
     user_data = "${data.template_file.worker_yaml.rendered}"
     ssh_keys = [
         "${var.ssh_fingerprint}"
