@@ -110,3 +110,6 @@ write_files:
             user: kubelet
           name: kubelet-context
         current-context: kubelet-context
+coreos:
+  update:
+    reboot-strategy: "off"

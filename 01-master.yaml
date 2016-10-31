@@ -192,3 +192,6 @@ write_files:
                 port: 10251
               initialDelaySeconds: 15
               timeoutSeconds: 1
+coreos:
+  update:
+    reboot-strategy: "off"
