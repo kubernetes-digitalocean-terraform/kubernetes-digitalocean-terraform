@@ -152,7 +152,7 @@ resource "digitalocean_droplet" "k8s_master" {
     # Generate k8s_master server certificate
     provisioner "local-exec" {
         command = <<EOF
-            $PWD/cfssl/generate_server.sh k8s_master "${digitalocean_droplet.k8s_master.ipv4_address},10.3.0.1,kubernetes.default,kubernetes"
+            $PWD/cfssl/generate_server.sh k8s_master "${digitalocean_droplet.k8s_master.ipv4_address},${digitalocean_droplet.k8s_master.ipv4_address_private},10.3.0.1,kubernetes.default,kubernetes"
 EOF
     }
 
@@ -247,7 +247,7 @@ data "template_file" "worker_yaml" {
     vars {
         DNS_SERVICE_IP = "10.3.0.10"
         ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_private}"
-        MASTER_HOST = "${digitalocean_droplet.k8s_master.ipv4_address}"
+        MASTER_HOST = "${digitalocean_droplet.k8s_master.ipv4_address_private}"
         HYPERCUBE_VERSION = "${var.hypercube_version}"
     }
 }

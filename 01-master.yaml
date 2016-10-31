@@ -4,7 +4,7 @@ write_files:
   - path: "/etc/flannel/options.env"
     permissions: "0755"
     content: |
-        FLANNELD_IFACE=$public_ipv4
+        FLANNELD_IFACE=$private_ipv4
         FLANNELD_ETCD_ENDPOINTS=https://${ETCD_IP}:2379
         FLANNELD_ETCD_CAFILE=/etc/ssl/etcd/ca.pem
         FLANNELD_ETCD_CERTFILE=/etc/ssl/etcd/client.pem
@@ -39,7 +39,7 @@ write_files:
           --register-schedulable=false \
           --allow-privileged=true \
           --config=/etc/kubernetes/manifests \
-          --hostname-override=$public_ipv4 \
+          --hostname-override=$private_ipv4 \
           --cluster-dns=${DNS_SERVICE_IP} \
           --cluster-domain=cluster.local
         Restart=always
@@ -70,7 +70,7 @@ write_files:
             - --allow-privileged=true
             - --service-cluster-ip-range=${SERVICE_IP_RANGE}
             - --secure-port=443
-            - --advertise-address=$public_ipv4
+            - --advertise-address=$private_ipv4
             - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota
             - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
             - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
