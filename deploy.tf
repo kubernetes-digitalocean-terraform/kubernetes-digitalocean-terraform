@@ -21,6 +21,11 @@ variable "number_of_workers" {}
 variable "hypercube_version" {
     default = "v1.3.6_coreos.0"
 }
+
+variable "prefix" {
+    default = ""
+}
+
 ###############################################################################
 #
 # Specify provider
@@ -42,7 +47,7 @@ provider "digitalocean" {
 
 resource "digitalocean_droplet" "k8s_etcd" {
     image = "coreos-stable"
-    name = "k8s-etcd"
+    name = "${var.prefix}k8s-etcd"
     region = "${var.do_region}"
     private_networking = true
     size = "512mb"
@@ -140,7 +145,7 @@ data "template_file" "master_yaml" {
 
 resource "digitalocean_droplet" "k8s_master" {
     image = "coreos-stable"
-    name = "k8s-master"
+    name = "${var.prefix}k8s-master"
     region = "${var.do_region}"
     private_networking = true
     size = "512mb"
@@ -263,7 +268,7 @@ data "template_file" "worker_yaml" {
 resource "digitalocean_droplet" "k8s_worker" {
     count = "${var.number_of_workers}"
     image = "coreos-stable"
-    name = "${format("k8s-worker-%02d", count.index + 1)}"
+    name = "${var.prefix}${format("k8s-worker-%02d", count.index + 1)}"
     region = "${var.do_region}"
     size = "512mb"
     private_networking = true
@@ -347,7 +352,7 @@ resource "null_resource" "make_admin_key" {
 EOF
     }
 }
- 
+
 resource "null_resource" "setup_kubectl" {
     depends_on = ["null_resource.make_admin_key"]
     provisioner "local-exec" {
