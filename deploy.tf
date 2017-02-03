@@ -63,20 +63,20 @@ resource "digitalocean_droplet" "k8s_etcd" {
     region = "${var.do_region}"
     private_networking = true
     size = "${var.size_etcd}"
-    user_data = "${file("00-etcd.yaml")}"
+    user_data = "${file("${path.module}/00-etcd.yaml")}"
     ssh_keys = ["${split(",", var.ssh_fingerprint)}"]
 
     # Generate the Certificate Authority
     provisioner "local-exec" {
         command = <<EOF
-            $PWD/cfssl/generate_ca.sh
+            ${path.module}/cfssl/generate_ca.sh
 EOF
     }
 
     # Generate k8s-etcd server certificate
     provisioner "local-exec" {
         command = <<EOF
-            $PWD/cfssl/generate_server.sh k8s_etcd ${digitalocean_droplet.k8s_etcd.ipv4_address_private}
+            ${path.module}/cfssl/generate_server.sh k8s_etcd ${digitalocean_droplet.k8s_etcd.ipv4_address_private}
 EOF
     }
 
@@ -135,7 +135,7 @@ EOF
 
 
 data "template_file" "master_yaml" {
-    template = "${file("01-master.yaml")}"
+    template = "${file("${path.module}/01-master.yaml")}"
     vars {
         DNS_SERVICE_IP = "10.3.0.10"
         ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_private}"
@@ -165,7 +165,7 @@ resource "digitalocean_droplet" "k8s_master" {
     # Generate k8s_master server certificate
     provisioner "local-exec" {
         command = <<EOF
-            $PWD/cfssl/generate_server.sh k8s_master "${digitalocean_droplet.k8s_master.ipv4_address},${digitalocean_droplet.k8s_master.ipv4_address_private},10.3.0.1,kubernetes.default,kubernetes"
+            ${path.module}/cfssl/generate_server.sh k8s_master "${digitalocean_droplet.k8s_master.ipv4_address},${digitalocean_droplet.k8s_master.ipv4_address_private},10.3.0.1,kubernetes.default,kubernetes"
 EOF
     }
 
@@ -195,7 +195,7 @@ EOF
     # Generate k8s_master client certificate
     provisioner "local-exec" {
         command = <<EOF
-            $PWD/cfssl/generate_client.sh k8s_master
+            ${path.module}/cfssl/generate_client.sh k8s_master
 EOF
     }
 
@@ -256,7 +256,7 @@ EOF
 
 
 data "template_file" "worker_yaml" {
-    template = "${file("02-worker.yaml")}"
+    template = "${file("${path.module}/02-worker.yaml")}"
     vars {
         DNS_SERVICE_IP = "10.3.0.10"
         ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_private}"
@@ -288,7 +288,7 @@ resource "digitalocean_droplet" "k8s_worker" {
     # Generate k8s_worker client certificate
     provisioner "local-exec" {
         command = <<EOF
-            $PWD/cfssl/generate_client.sh k8s_worker
+            ${path.module}/cfssl/generate_client.sh k8s_worker
 EOF
     }
 
@@ -354,7 +354,7 @@ resource "null_resource" "make_admin_key" {
     depends_on = ["digitalocean_droplet.k8s_worker"]
     provisioner "local-exec" {
         command = <<EOF
-            $PWD/cfssl/generate_admin.sh
+            ${path.module}/cfssl/generate_admin.sh
 EOF
     }
 }
@@ -383,7 +383,7 @@ resource "null_resource" "deploy_dns_addon" {
     provisioner "local-exec" {
         command = <<EOF
             until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
-            kubectl create -f 03-dns-addon.yaml
+            kubectl create -f ${path.module}/03-dns-addon.yaml
 EOF
     }
 }
@@ -392,7 +392,7 @@ resource "null_resource" "deploy_microbot" {
     depends_on = ["null_resource.setup_kubectl"]
     provisioner "local-exec" {
         command = <<EOF
-            sed -e "s/\$EXT_IP1/${digitalocean_droplet.k8s_worker.0.ipv4_address}/" < 04-microbot.yaml > ./secrets/04-microbot.rendered.yaml
+            sed -e "s/\$EXT_IP1/${digitalocean_droplet.k8s_worker.0.ipv4_address}/" < ${path.module}/04-microbot.yaml > ./secrets/04-microbot.rendered.yaml
             until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
             kubectl create -f ./secrets/04-microbot.rendered.yaml
 

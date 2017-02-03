@@ -1,11 +1,12 @@
 #!/bin/bash
 
 SECRETS_DIR=$PWD/secrets
+CFSSL_DIR=$(dirname "${BASH_SOURCE[0]}")
 
-template=$(cat $PWD/cfssl/server.json | sed "s/\${SERVERNAME}/$1/g")
+template=$(cat $CFSSL_DIR/server.json | sed "s/\${SERVERNAME}/$1/g")
 
 echo $template | cfssl gencert -ca=$SECRETS_DIR/ca.pem \
     -ca-key=$SECRETS_DIR/ca-key.pem \
-    -config=$PWD/cfssl/ca-config.json \
+    -config=$CFSSL_DIR/ca-config.json \
     -profile=server \
     -hostname="$2" - | cfssljson -bare $SECRETS_DIR/$1
