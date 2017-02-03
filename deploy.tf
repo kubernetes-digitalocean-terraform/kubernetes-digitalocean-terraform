@@ -64,9 +64,7 @@ resource "digitalocean_droplet" "k8s_etcd" {
     private_networking = true
     size = "${var.size_etcd}"
     user_data = "${file("00-etcd.yaml")}"
-    ssh_keys = [
-        "${var.ssh_fingerprint}"
-    ]
+    ssh_keys = ["${split(",", var.ssh_fingerprint)}"]
 
     # Generate the Certificate Authority
     provisioner "local-exec" {
@@ -162,9 +160,7 @@ resource "digitalocean_droplet" "k8s_master" {
     private_networking = true
     size = "${var.size_master}"
     user_data = "${data.template_file.master_yaml.rendered}"
-    ssh_keys = [
-        "${var.ssh_fingerprint}"
-    ]
+    ssh_keys = ["${split(",", var.ssh_fingerprint)}"]
 
     # Generate k8s_master server certificate
     provisioner "local-exec" {
@@ -285,9 +281,7 @@ resource "digitalocean_droplet" "k8s_worker" {
     size = "${var.size_worker}"
     private_networking = true
     user_data = "${data.template_file.worker_yaml.rendered}"
-    ssh_keys = [
-        "${var.ssh_fingerprint}"
-    ]
+    ssh_keys = ["${split(",", var.ssh_fingerprint)}"]
 
 
 
