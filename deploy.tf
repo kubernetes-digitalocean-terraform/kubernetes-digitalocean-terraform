@@ -26,6 +26,18 @@ variable "prefix" {
     default = ""
 }
 
+variable "size_etcd" {
+    default = "512mb"
+}
+
+variable "size_master" {
+    default = "512mb"
+}
+
+variable "size_worker" {
+    default = "512mb"
+}
+
 ###############################################################################
 #
 # Specify provider
@@ -50,7 +62,7 @@ resource "digitalocean_droplet" "k8s_etcd" {
     name = "${var.prefix}k8s-etcd"
     region = "${var.do_region}"
     private_networking = true
-    size = "512mb"
+    size = "${var.size_etcd}"
     user_data = "${file("00-etcd.yaml")}"
     ssh_keys = [
         "${var.ssh_fingerprint}"
@@ -148,7 +160,7 @@ resource "digitalocean_droplet" "k8s_master" {
     name = "${var.prefix}k8s-master"
     region = "${var.do_region}"
     private_networking = true
-    size = "512mb"
+    size = "${var.size_master}"
     user_data = "${data.template_file.master_yaml.rendered}"
     ssh_keys = [
         "${var.ssh_fingerprint}"
@@ -270,7 +282,7 @@ resource "digitalocean_droplet" "k8s_worker" {
     image = "coreos-stable"
     name = "${var.prefix}${format("k8s-worker-%02d", count.index + 1)}"
     region = "${var.do_region}"
-    size = "512mb"
+    size = "${var.size_worker}"
     private_networking = true
     user_data = "${data.template_file.worker_yaml.rendered}"
     ssh_keys = [
