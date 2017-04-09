@@ -20,30 +20,49 @@ write_files:
         [Unit]
         Requires=flanneld.service
         After=flanneld.service
+        [Service]
+        EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
+  - path: "/etc/kubernetes/cni/docker_opts_cni.env"
+    content: |
+        DOCKER_OPT_BIP=""
+        DOCKER_OPT_IPMASQ=""
+  - path: "/etc/kubernetes/cni/net.d/10-flannel.conf"
+    content: |
+        {
+            "name": "podnet",
+            "type": "flannel",
+            "delegate": {
+                "isDefaultGateway": true
+            }
+        }
   - path: "/etc/systemd/system/kubelet.service"
     permissions: "0755"
     content: |
         [Service]
-        ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
-        ExecStartPre=/usr/bin/mkdir -p /var/log/containers
-
-        Environment=KUBELET_VERSION=${HYPERCUBE_VERSION}
-        Environment="RKT_OPTS=--volume var-log,kind=host,source=/var/log \
+        Environment=KUBELET_IMAGE_TAG=${HYPERKUBE_VERSION}
+        Environment="RKT_RUN_ARGS=--uuid-file-save=/var/run/kubelet-pod.uuid \
+          --volume var-log,kind=host,source=/var/log \
           --mount volume=var-log,target=/var/log \
           --volume dns,kind=host,source=/etc/resolv.conf \
           --mount volume=dns,target=/etc/resolv.conf"
-
+        ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
+        ExecStartPre=/usr/bin/mkdir -p /var/log/containers
+        ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
         ExecStart=/usr/lib/coreos/kubelet-wrapper \
+          --anonymous-auth=false \
+          --client-ca-file=/etc/kubernetes/ssl/ca.pem \
           --api-servers=http://127.0.0.1:8080 \
-          --network-plugin-dir=/etc/kubernetes/cni/net.d \
           --register-schedulable=false \
+          --container-runtime=docker \
           --allow-privileged=true \
-          --config=/etc/kubernetes/manifests \
+          --pod-manifest-path=/etc/kubernetes/manifests \
           --hostname-override=$private_ipv4 \
-          --cluster-dns=${DNS_SERVICE_IP} \
-          --cluster-domain=cluster.local
+          --cluster_dns=${DNS_SERVICE_IP} \
+          --cluster_domain=cluster.local
+        ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
         Restart=always
         RestartSec=10
+
         [Install]
         WantedBy=multi-user.target
   - path: "/etc/kubernetes/manifests/kube-apiserver.yaml"
@@ -58,7 +77,7 @@ write_files:
           hostNetwork: true
           containers:
           - name: kube-apiserver
-            image: quay.io/coreos/hyperkube:${HYPERCUBE_VERSION}
+            image: quay.io/coreos/hyperkube:${HYPERKUBE_VERSION}
             command:
             - /hyperkube
             - apiserver
@@ -67,16 +86,26 @@ write_files:
             - --etcd-cafile=/etc/kubernetes/ssl/ca.pem
             - --etcd-certfile=/etc/kubernetes/ssl/client.pem
             - --etcd-keyfile=/etc/kubernetes/ssl/client-key.pem
+            - --kubelet-client-certificate=/etc/kubernetes/ssl/client.pem
+            - --kubelet-client-key=/etc/kubernetes/ssl/client-key.pem
             - --allow-privileged=true
             - --service-cluster-ip-range=${SERVICE_IP_RANGE}
             - --secure-port=443
             - --advertise-address=$private_ipv4
-            - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota
+            - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
             - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
             - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
             - --client-ca-file=/etc/kubernetes/ssl/ca.pem
             - --service-account-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-            - --runtime-config=extensions/v1beta1=true,extensions/v1beta1/networkpolicies=true
+            - --runtime-config=extensions/v1beta1/networkpolicies=true
+            - --anonymous-auth=false
+            livenessProbe:
+              httpGet:
+                host: 127.0.0.1
+                port: 8080
+                path: /healthz
+              initialDelaySeconds: 15
+              timeoutSeconds: 15
             ports:
             - containerPort: 443
               hostPort: 443
@@ -110,7 +139,7 @@ write_files:
           hostNetwork: true
           containers:
           - name: kube-proxy
-            image: quay.io/coreos/hyperkube:${HYPERCUBE_VERSION}
+            image: quay.io/coreos/hyperkube:${HYPERKUBE_VERSION}
             command:
             - /hyperkube
             - proxy
@@ -138,7 +167,7 @@ write_files:
           hostNetwork: true
           containers:
           - name: kube-controller-manager
-            image: quay.io/coreos/hyperkube:${HYPERCUBE_VERSION}
+            image: quay.io/coreos/hyperkube:${HYPERKUBE_VERSION}
             command:
             - /hyperkube
             - controller-manager
@@ -179,7 +208,7 @@ write_files:
           hostNetwork: true
           containers:
           - name: kube-scheduler
-            image: quay.io/coreos/hyperkube:${HYPERCUBE_VERSION}
+            image: quay.io/coreos/hyperkube:${HYPERKUBE_VERSION}
             command:
             - /hyperkube
             - scheduler
@@ -191,4 +220,4 @@ write_files:
                 path: /healthz
                 port: 10251
               initialDelaySeconds: 15
-              timeoutSeconds: 1
+              timeoutSeconds: 15

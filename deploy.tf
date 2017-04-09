@@ -17,9 +17,13 @@ variable "do_region" {
     default = "nyc3"
 }
 variable "ssh_fingerprint" {}
+variable "ssh_private_key" {
+    default = "~/.ssh/id_rsa"
+}
+
 variable "number_of_workers" {}
-variable "hypercube_version" {
-    default = "v1.3.6_coreos.0"
+variable "hyperkube_version" {
+    default = "v1.5.4_coreos.0"
 }
 
 variable "prefix" {
@@ -85,21 +89,27 @@ EOF
         source = "./secrets/ca.pem"
         destination = "/home/core/ca.pem"
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
     provisioner "file" {
         source = "./secrets/k8s_etcd.pem"
         destination = "/home/core/etcd.pem"
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
     provisioner "file" {
         source = "./secrets/k8s_etcd-key.pem"
         destination = "/home/core/etcd-key.pem"
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
 
@@ -110,7 +120,9 @@ EOF
             "sudo mv /home/core/{ca,etcd,etcd-key}.pem /etc/kubernetes/ssl/."
         ]
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
 
@@ -121,7 +133,9 @@ EOF
             "sudo systemctl enable etcd2",
         ]
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
 }
@@ -141,7 +155,7 @@ data "template_file" "master_yaml" {
         ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_private}"
         POD_NETWORK = "10.2.0.0/16"
         SERVICE_IP_RANGE = "10.3.0.0/24"
-        HYPERCUBE_VERSION = "${var.hypercube_version}"
+        HYPERKUBE_VERSION = "${var.hyperkube_version}"
     }
 }
 
@@ -174,21 +188,27 @@ EOF
         source = "./secrets/ca.pem"
         destination = "/home/core/ca.pem"
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
     provisioner "file" {
         source = "./secrets/k8s_master.pem"
         destination = "/home/core/apiserver.pem"
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
     provisioner "file" {
         source = "./secrets/k8s_master-key.pem"
         destination = "/home/core/apiserver-key.pem"
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
 
@@ -204,14 +224,18 @@ EOF
         source = "./secrets/client-k8s_master.pem"
         destination = "/home/core/client.pem"
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
     provisioner "file" {
         source = "./secrets/client-k8s_master-key.pem"
         destination = "/home/core/client-key.pem"
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
 
@@ -225,7 +249,9 @@ EOF
             "sudo mv /home/core/{ca,client,client-key}.pem /etc/ssl/etcd/.",
         ]
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
 
@@ -237,12 +263,12 @@ EOF
             "sudo systemctl start flanneld",
             "sudo systemctl enable flanneld",
             "sudo systemctl start kubelet",
-            "sudo systemctl enable kubelet",
-            "until $(curl --output /dev/null --silent --head --fail http://127.0.0.1:8080); do printf '.'; sleep 5; done",
-            "curl -XPOST -H 'Content-type: application/json' -d'{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"name\":\"kube-system\"}}' http://127.0.0.1:8080/api/v1/namespaces"
+            "sudo systemctl enable kubelet"
         ]
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
 }
@@ -261,7 +287,7 @@ data "template_file" "worker_yaml" {
         DNS_SERVICE_IP = "10.3.0.10"
         ETCD_IP = "${digitalocean_droplet.k8s_etcd.ipv4_address_private}"
         MASTER_HOST = "${digitalocean_droplet.k8s_master.ipv4_address_private}"
-        HYPERCUBE_VERSION = "${var.hypercube_version}"
+        HYPERKUBE_VERSION = "${var.hyperkube_version}"
     }
 }
 
@@ -297,21 +323,27 @@ EOF
         source = "./secrets/ca.pem"
         destination = "/home/core/ca.pem"
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
     provisioner "file" {
         source = "./secrets/client-k8s_worker.pem"
         destination = "/home/core/worker.pem"
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
     provisioner "file" {
         source = "./secrets/client-k8s_worker-key.pem"
         destination = "/home/core/worker-key.pem"
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
 
@@ -324,7 +356,9 @@ EOF
             "sudo mv /home/core/{ca,worker,worker-key}.pem /etc/ssl/etcd/."
         ]
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
 
@@ -338,7 +372,9 @@ EOF
             "sudo systemctl enable kubelet"
         ]
         connection {
-            user = "core"
+            type = "ssh",
+            user = "core",
+            private_key = "${file(var.ssh_private_key)}"
         }
     }
 }
