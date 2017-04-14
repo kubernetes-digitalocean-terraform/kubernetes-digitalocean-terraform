@@ -21,21 +21,6 @@ write_files:
         [Unit]
         Requires=flanneld.service
         After=flanneld.service
-        [Service]
-        EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
-  - path: "/etc/kubernetes/cni/docker_opts_cni.env"
-    content: |
-        DOCKER_OPT_BIP=""
-        DOCKER_OPT_IPMASQ=""
-  - path: "/etc/kubernetes/cni/net.d/10-flannel.conf"
-    content: |
-        {
-            "name": "podnet",
-            "type": "flannel",
-            "delegate": {
-                "isDefaultGateway": true
-            }
-        }
   - path: "/etc/systemd/system/kubelet.service"
     permissions: "0755"
     content: |
@@ -53,13 +38,14 @@ write_files:
           --anonymous-auth=false \
           --client-ca-file=/etc/kubernetes/ssl/ca.pem \
           --api-servers=https://${MASTER_HOST} \
+          --network-plugin-dir=/etc/kubernetes/cni/net.d \
           --container-runtime=docker \
           --register-node=true \
           --allow-privileged=true \
           --pod-manifest-path=/etc/kubernetes/manifests \
           --hostname-override=$private_ipv4 \
-          --cluster_dns=${DNS_SERVICE_IP} \
-          --cluster_domain=cluster.local \
+          --cluster-dns=${DNS_SERVICE_IP} \
+          --cluster-domain=cluster.local \
           --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
           --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
           --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem
