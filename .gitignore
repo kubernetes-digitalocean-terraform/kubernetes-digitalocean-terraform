@@ -10,4 +10,4 @@ secrets/
 # Terraform assets
 *.tfstate
 *.tfstate.backup
-
+/terraform_vars.sh
