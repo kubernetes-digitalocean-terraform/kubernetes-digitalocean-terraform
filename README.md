@@ -1,15 +1,15 @@
-# Kubernetes - Digital Ocean - Terraform
+# Kubernetes - DigitalOcean - Terraform
 
-Deploy your Kubernetes cluster in Digital Ocean using Terraform.
+Deploy your Kubernetes cluster on DigitalOcean using Terraform.
 
 ## Requirements
 
-* [Digital Ocean](https://www.digitalocean.com/) account
-* Digital Ocean Token [In DO's settings/tokens/new](https://cloud.digitalocean.com/settings/tokens/new)
+* [DigitalOcean](https://www.digitalocean.com/) account
+* DigitalOcean Token [In DO's settings/tokens/new](https://cloud.digitalocean.com/settings/tokens/new)
 * [Terraform](https://www.terraform.io/)
 * CloudFlare's PKI/TLS toolkit [cfssl](https://github.com/cloudflare/cfssl)
 
-#### On Mac
+### On Mac
 
 With brew installed, all tools can be installed with
 
@@ -25,22 +25,22 @@ Do all the following steps from a development machine. It does not matter _where
 ssh-keygen -t rsa -b 4096
 ```
 
-System will prompt you for a filepath to save the key, we will go by `~/.ssh/id_rsa` in this tutorial.
+The system will prompt you for a file path to save the key, we will go with `~/.ssh/id_rsa` in this tutorial.
 
-## Add your public key in Digital Ocean control panel
+## Add your public key in the DigitalOcean control panel
 
 [Do it here](https://cloud.digitalocean.com/settings/security). Name it and paste the public key just below `Add SSH Key`.
 
-## Add this key to your ssh agent
+## Add this key to your SSH agent
 
 ```bash
 eval `ssh-agent -s`
 ssh-add ~/.ssh/id_rsa
 ```
 
-## Invoke terraform
+## Invoke Terraform
 
-We put our Digitalocean token in the file `./secrets/DO_TOKEN` (that directory is mentioned in `.gitignore`, of course, so we don't leak it)
+We put our DigitalOcean token in the file `./secrets/DO_TOKEN` (this directory is mentioned in `.gitignore`, of course, so we don't leak it)
 
 Then we setup the environment variables (step into `this repository` root). Note that the first variable sets up the *number of workers*
 
@@ -65,7 +65,7 @@ Optionally, you can customize the datacenter *region* via:
 ```bash
 export TF_VAR_do_region=fra1
 ```
-The default region is `nyc3`. You can find a list of available regions from [Digitialocean](https://developers.digitalocean.com/documentation/v2/#list-all-regions).
+The default region is `nyc3`. You can find a list of available regions from [DigitalOcean](https://developers.digitalocean.com/documentation/v2/#list-all-regions).
 
 After setup, call `terraform apply`
 
@@ -99,11 +99,11 @@ These scripts are mostly taken from the [CoreOS + Kubernetes Step by Step](https
 
 Certificate generation is covered in more detail by CoreOS's [Generate self-signed certificates](https://coreos.com/os/docs/latest/generate-self-signed-certificates.html) documentation.
 
-These resources are excellent starting places for more in depth documentation. Below is an overview of the cluster.
+These resources are excellent starting places for more in-depth documentation. Below is an overview of the cluster.
 
 ### K8s etcd
 
-A dedicated host running a tls secured + authenticated etcd2 instance for Kubernetes.
+A dedicated host running a TLS secured + authenticated etcd2 instance for Kubernetes.
 
 #### Cloud config
 
@@ -126,7 +126,7 @@ See the template `01-master.yaml`.
 
 #### Provisions
 
-Once we create this droplet (and get its `IP`), the TLS assets will be created locally (i.e. the development machine from we run `terraform`), and put into the directory `secrets` (which, again, is mentioned in `.gitignore`). The tls assets consist of a server key and certificate for the apiserver, as well as a client key and certificate to authenticate flanneld and the apiserver to etcd2.
+Once we create this droplet (and get its `IP`), the TLS assets will be created locally (i.e. on the development machine from which we run `terraform`), and put into the directory `secrets` (which, again, is mentioned in `.gitignore`). The TLS assets consist of a server key and certificate for the API server, as well as a client key and certificate to authenticate flanneld and the API server to etcd2.
 
 The TLS assets are copied to appropriate directories on the K8s master using Terraform `file` and `remote-exec` provisioners.
 
@@ -147,7 +147,7 @@ See the template `02-worker.yaml`.
 
 #### Provisions
 
-For each droplet created, a TLS client key and certificate will be created locally (i.e. on the development machine from we run `terraform`), and put into the directory `secrets` (which, again, is mentioned in `.gitignore`). 
+For each droplet created, a TLS client key and certificate will be created locally (i.e. on the development machine from which we run `terraform`), and put into the directory `secrets` (which, again, is mentioned in `.gitignore`). 
 
 The TLS assets are then copied to appropriate directories on the worker using Terraform `file` and `remote-exec` provisioners.
 
