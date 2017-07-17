@@ -39,10 +39,10 @@ write_files:
           --api-servers=http://127.0.0.1:8080 \
           --network-plugin-dir=/etc/kubernetes/cni/net.d \
           --register-schedulable=false \
+          --cloud-provider=external \
           --container-runtime=docker \
           --allow-privileged=true \
           --pod-manifest-path=/etc/kubernetes/manifests \
-          --hostname-override=$private_ipv4 \
           --cluster-dns=${DNS_SERVICE_IP} \
           --cluster-domain=cluster.local
         ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
@@ -78,6 +78,8 @@ write_files:
             - --service-cluster-ip-range=${SERVICE_IP_RANGE}
             - --secure-port=443
             - --storage-backend=etcd2
+            - --cloud-provider=external
+            - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
             - --advertise-address=$private_ipv4
             - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
             - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
@@ -160,6 +162,7 @@ write_files:
             - --master=http://127.0.0.1:8080
             - --leader-elect=true
             - --service-account-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
+            - --cloud-provider=external
             - --root-ca-file=/etc/kubernetes/ssl/ca.pem
             livenessProbe:
               httpGet:
