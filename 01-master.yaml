@@ -77,6 +77,7 @@ write_files:
             - --allow-privileged=true
             - --service-cluster-ip-range=${SERVICE_IP_RANGE}
             - --secure-port=443
+            - --storage-backend=etcd2
             - --advertise-address=$private_ipv4
             - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
             - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
