@@ -35,7 +35,7 @@ variable "size_etcd" {
 }
 
 variable "size_master" {
-    default = "512mb"
+    default = "1gb"
 }
 
 variable "size_worker" {
