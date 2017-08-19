@@ -23,7 +23,7 @@ variable "ssh_private_key" {
 
 variable "number_of_workers" {}
 variable "hyperkube_version" {
-    default = "v1.5.4_coreos.0"
+    default = "v1.7.3_coreos.0"
 }
 
 variable "prefix" {
@@ -35,7 +35,7 @@ variable "size_etcd" {
 }
 
 variable "size_master" {
-    default = "512mb"
+    default = "1gb"
 }
 
 variable "size_worker" {
