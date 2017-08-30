@@ -37,7 +37,7 @@ write_files:
         ExecStart=/usr/lib/coreos/kubelet-wrapper \
           --anonymous-auth=false \
           --client-ca-file=/etc/kubernetes/ssl/ca.pem \
-          --api-servers=https://${MASTER_HOST} \
+          --api-servers=https://${MASTER_HOST}:6443 \
           --network-plugin-dir=/etc/kubernetes/cni/net.d \
           --container-runtime=docker \
           --register-node=true \
@@ -71,7 +71,7 @@ write_files:
             command:
             - /hyperkube
             - proxy
-            - --master=https://${MASTER_HOST}
+            - --master=https://${MASTER_HOST}:6443
             - --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml
             - --proxy-mode=iptables
             securityContext:
