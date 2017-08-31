@@ -542,7 +542,7 @@ resource "null_resource" "setup_kubectl" {
             echo export ADMIN_CERT=$PWD/secrets/admin.pem >> $PWD/secrets/setup_kubectl.sh
             . $PWD/secrets/setup_kubectl.sh
             kubectl config set-cluster default-cluster \
-                --server=https://$MASTER_HOST --certificate-authority=$CA_CERT
+                --server=https://$MASTER_HOST:6443 --certificate-authority=$CA_CERT
             kubectl config set-credentials default-admin \
                  --certificate-authority=$CA_CERT --client-key=$ADMIN_KEY --client-certificate=$ADMIN_CERT
             kubectl config set-context default-system --cluster=default-cluster --user=default-admin
