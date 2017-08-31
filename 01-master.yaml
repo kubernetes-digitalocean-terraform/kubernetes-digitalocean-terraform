@@ -38,7 +38,6 @@ write_files:
           --client-ca-file=/etc/kubernetes/ssl/ca.pem \
           --api-servers=http://127.0.0.1:8080 \
           --network-plugin-dir=/etc/kubernetes/cni/net.d \
-          --register-schedulable=false \
           --container-runtime=docker \
           --allow-privileged=true \
           --pod-manifest-path=/etc/kubernetes/manifests \
@@ -76,7 +75,7 @@ write_files:
             - --kubelet-client-key=/etc/kubernetes/ssl/client-key.pem
             - --allow-privileged=true
             - --service-cluster-ip-range=${SERVICE_IP_RANGE}
-            - --secure-port=443
+            - --secure-port=6443
             - --storage-backend=etcd2
             - --advertise-address=$private_ipv4
             - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
@@ -93,8 +92,8 @@ write_files:
               initialDelaySeconds: 15
               timeoutSeconds: 15
             ports:
-            - containerPort: 443
-              hostPort: 443
+            - containerPort: 6443
+              hostPort: 6443
               name: https
             - containerPort: 8080
               hostPort: 8080
