@@ -38,7 +38,6 @@ write_files:
           --client-ca-file=/etc/kubernetes/ssl/ca.pem \
           --api-servers=http://127.0.0.1:8080 \
           --network-plugin-dir=/etc/kubernetes/cni/net.d \
-          --register-schedulable=false \
           --container-runtime=docker \
           --allow-privileged=true \
           --pod-manifest-path=/etc/kubernetes/manifests \
