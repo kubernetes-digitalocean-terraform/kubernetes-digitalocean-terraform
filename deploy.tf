@@ -48,7 +48,6 @@ variable "size_worker" {
 #
 ###############################################################################
 
-
 provider "digitalocean" {
   token = "${var.do_token}"
 }
@@ -140,13 +139,11 @@ EOF
     }
 }
 
-
 ###############################################################################
 #
 # Master host's user data template
 #
 ###############################################################################
-
 
 data "template_file" "master_yaml" {
     template = "${file("${path.module}/01-master.yaml")}"
@@ -159,13 +156,11 @@ data "template_file" "master_yaml" {
     }
 }
 
-
 ###############################################################################
 #
 # Master host
 #
 ###############################################################################
-
 
 resource "digitalocean_droplet" "k8s_master" {
     image = "coreos-stable"
@@ -273,7 +268,6 @@ EOF
     }
 }
 
-
 ###############################################################################
 #
 # Worker host's user data template
@@ -297,7 +291,6 @@ data "template_file" "worker_yaml" {
 # Worker hosts
 #
 ###############################################################################
-
 
 resource "digitalocean_droplet" "k8s_worker" {
     count = "${var.number_of_workers}"
@@ -381,10 +374,154 @@ EOF
 
 ###############################################################################
 #
-# Make config file and export variables for kubectl
+# etcd host firewall
 #
 ###############################################################################
 
+resource "digitalocean_firewall" "k8s_etcd" {
+  name = "${var.prefix}k8s-etcd-fw"
+
+  droplet_ids = ["${digitalocean_droplet.k8s_etcd.id}"]
+
+  inbound_rule = [
+    {
+      protocol           = "tcp"
+      port_range         = "22"
+      source_addresses   = ["${digitalocean_droplet.k8s_master.ipv4_address_private}"]
+    },
+    {
+      protocol           = "tcp"
+      port_range         = "2379-2380"
+      source_addresses   = ["${digitalocean_droplet.k8s_master.ipv4_address_private}", "${digitalocean_droplet.k8s_worker.*.ipv4_address_private}"]
+    },
+  ]
+
+  outbound_rule = [
+    {
+      protocol                = "tcp"
+      port_range              = "all"
+      destination_addresses   = ["0.0.0.0/0", "::/0"]
+    },
+    {
+      protocol                = "udp"
+      port_range              = "all"
+      destination_addresses   = ["0.0.0.0/0", "::/0"]
+    },
+  ]
+
+}
+
+###############################################################################
+#
+# worker host firewall
+#
+###############################################################################
+
+resource "digitalocean_firewall" "k8s_worker" {
+  name = "${var.prefix}k8s-worker-fw"
+
+  droplet_ids = ["${digitalocean_droplet.k8s_worker.*.id}"]
+
+  inbound_rule = [
+    {
+      protocol           = "tcp"
+      port_range         = "all"
+      source_addresses   = ["${digitalocean_droplet.k8s_master.ipv4_address_private}", "${digitalocean_droplet.k8s_worker.*.ipv4_address_private}"]
+    },
+    {
+      protocol           = "tcp"
+      port_range         = "10250"
+      source_addresses   = ["${digitalocean_droplet.k8s_master.ipv4_address_private}", "${digitalocean_droplet.k8s_worker.*.ipv4_address_private}"]
+    },
+    {
+      protocol           = "tcp"
+      port_range         = "10255"
+      source_addresses   = ["${digitalocean_droplet.k8s_master.ipv4_address_private}"]
+    },
+    {
+      protocol           = "udp"
+      port_range         = "8285"
+      source_addresses   = ["${digitalocean_droplet.k8s_master.ipv4_address_private}", "${digitalocean_droplet.k8s_worker.*.ipv4_address_private}"]
+    },
+    {
+      protocol           = "udp"
+      port_range         = "8472"
+      source_addresses   = ["${digitalocean_droplet.k8s_master.ipv4_address_private}", "${digitalocean_droplet.k8s_worker.*.ipv4_address_private}"]
+    },
+    {
+      protocol           = "tcp"
+      port_range         = "80"
+      source_addresses = ["0.0.0.0/0"]
+    },
+  ]
+
+  outbound_rule = [
+    {
+      protocol                = "tcp"
+      port_range              = "all"
+      destination_addresses   = ["0.0.0.0/0", "::/0"]
+    },
+    {
+      protocol                = "udp"
+      port_range              = "all"
+      destination_addresses   = ["0.0.0.0/0", "::/0"]
+    },
+  ]
+}
+
+###############################################################################
+#
+# master host firewall
+#
+###############################################################################
+
+resource "digitalocean_firewall" "k8s_master" {
+  name = "${var.prefix}k8s-master-fw"
+
+  droplet_ids = ["${digitalocean_droplet.k8s_master.id}"]
+
+  inbound_rule = [
+    {
+      protocol           = "tcp"
+      port_range         = "22"
+      source_addresses = ["0.0.0.0/0"]
+    },
+
+    {
+      protocol           = "tcp"
+      port_range         = "443"
+      source_addresses = ["0.0.0.0/0"]
+    },
+    {
+      protocol           = "tcp"
+      port_range         = "8285"
+      source_addresses   = ["${digitalocean_droplet.k8s_worker.*.ipv4_address_private}"]
+    },
+    {
+      protocol           = "udp"
+      port_range         = "8472"
+      source_addresses   = ["${digitalocean_droplet.k8s_worker.*.ipv4_address_private}"]
+    },
+  ]
+  outbound_rule = [
+    {
+      protocol                = "tcp"
+      port_range              = "all"
+      destination_addresses   = ["0.0.0.0/0", "::/0"]
+    },
+    {
+      protocol                = "udp"
+      port_range              = "all"
+      destination_addresses   = ["0.0.0.0/0", "::/0"]
+    },
+  ]
+}
+
+###############################################################################
+#
+# Make config file and export variables for kubectl
+#
+###############################################################################
 
 resource "null_resource" "make_admin_key" {
     depends_on = ["digitalocean_droplet.k8s_worker"]
