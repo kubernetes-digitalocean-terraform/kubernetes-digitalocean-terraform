@@ -448,11 +448,6 @@ resource "digitalocean_firewall" "k8s_worker" {
       port_range         = "8472"
       source_addresses   = ["${digitalocean_droplet.k8s_master.ipv4_address_private}", "${digitalocean_droplet.k8s_worker.*.ipv4_address_private}"]
     },
-    {
-      protocol           = "tcp"
-      port_range         = "80"
-      source_addresses = ["0.0.0.0/0"]
-    },
   ]
 
   outbound_rule = [
@@ -494,6 +489,11 @@ resource "digitalocean_firewall" "k8s_master" {
     },
     {
       protocol           = "tcp"
+      port_range         = "6443"
+      source_addresses = ["0.0.0.0/0"]
+    },
+    {
+      protocol           = "tcp"
       port_range         = "8285"
       source_addresses   = ["${digitalocean_droplet.k8s_worker.*.ipv4_address_private}"]
     },
@@ -501,6 +501,11 @@ resource "digitalocean_firewall" "k8s_master" {
       protocol           = "udp"
       port_range         = "8472"
       source_addresses   = ["${digitalocean_droplet.k8s_worker.*.ipv4_address_private}"]
+    },
+    {
+      protocol           = "tcp"
+      port_range         = "80"
+      source_addresses = ["0.0.0.0/0"]
     },
   ]
   outbound_rule = [
@@ -573,14 +578,24 @@ EOF
    }
 }
 
-resource "null_resource" "deploy_microbot" {
-    depends_on = ["null_resource.setup_kubectl"]
-    provisioner "local-exec" {
-        command = <<EOF
-            sed -e "s/\$EXT_IP1/${digitalocean_droplet.k8s_worker.0.ipv4_address}/" < ${path.module}/04-microbot.yaml > ./secrets/04-microbot.rendered.yaml
-            until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
-            kubectl create -f ./secrets/04-microbot.rendered.yaml
+resource "null_resource" "deploy_nginx_ingress" {
+   depends_on = ["null_resource.label_master_node"]
+   provisioner "local-exec" {
+       command = <<EOF
+           until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
+           kubectl create -f ${path.module}/04-ingress-controller.yaml
 
 EOF
-    }
+   }
+}
+
+resource "null_resource" "deploy_hello" {
+   depends_on = ["null_resource.label_master_node"]
+   provisioner "local-exec" {
+       command = <<EOF
+           until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
+           kubectl create -f ${path.module}/05-hello.yaml
+
+EOF
+   }
 }
