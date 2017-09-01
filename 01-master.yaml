@@ -43,7 +43,9 @@ write_files:
           --pod-manifest-path=/etc/kubernetes/manifests \
           --hostname-override=$private_ipv4 \
           --cluster-dns=${DNS_SERVICE_IP} \
-          --cluster-domain=cluster.local
+          --cluster-domain=cluster.local \
+          --node-labels=kubernetes.io/role=master \
+          --register-with-taints=node-role.kubernetes.io/master=:NoSchedule
         ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
         Restart=always
         RestartSec=10

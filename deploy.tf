@@ -424,18 +424,6 @@ EOF
     }
 }
 
-resource "null_resource" "label_master_node" {
-   depends_on = ["null_resource.setup_kubectl"]
-   provisioner "local-exec" {
-       command = <<EOF
-           until kubectl get node ${digitalocean_droplet.k8s_master.ipv4_address_private} 2>/dev/null; do printf '.'; sleep 5; done
-           kubectl label nodes ${digitalocean_droplet.k8s_master.ipv4_address_private} dedicated=master
-           kubectl taint nodes ${digitalocean_droplet.k8s_master.ipv4_address_private} master=scheduable:NoSchedule
-
-EOF
-   }
-}
-
 resource "null_resource" "deploy_microbot" {
     depends_on = ["null_resource.setup_kubectl"]
     provisioner "local-exec" {
