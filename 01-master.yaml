@@ -38,13 +38,14 @@ write_files:
           --client-ca-file=/etc/kubernetes/ssl/ca.pem \
           --api-servers=http://127.0.0.1:8080 \
           --network-plugin-dir=/etc/kubernetes/cni/net.d \
-          --register-schedulable=false \
           --container-runtime=docker \
           --allow-privileged=true \
           --pod-manifest-path=/etc/kubernetes/manifests \
           --hostname-override=$private_ipv4 \
           --cluster-dns=${DNS_SERVICE_IP} \
-          --cluster-domain=cluster.local
+          --cluster-domain=cluster.local \
+          --node-labels=kubernetes.io/role=master \
+          --register-with-taints=node-role.kubernetes.io/master=:NoSchedule
         ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
         Restart=always
         RestartSec=10
