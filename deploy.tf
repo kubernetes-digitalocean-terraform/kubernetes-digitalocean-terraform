@@ -374,8 +374,10 @@ EOF
 
 ###############################################################################
 #
-# etcd host firewall
+# etcd host inbound firewall rules
 #
+# TCP port 22 from master node for debugging over ssh
+# TCP ports 2379-2380 from master and worker nodes for etcd server client API
 ###############################################################################
 
 resource "digitalocean_firewall" "k8s_etcd" {
@@ -413,8 +415,14 @@ resource "digitalocean_firewall" "k8s_etcd" {
 
 ###############################################################################
 #
-# worker host firewall
+# worker host inbound firewall rules
 #
+# TCP port 22 from master node for debugging over ssh
+# TCP port 10250 from Master nodes for Kubelet API exec and logs.
+# TCP port 10255 from Heapster Worker node for read-only Kubelet API.
+# TCP port ALL from Master & Worker Nodes for Intra-cluster communication (unnecessary if vxlan is used for networking)
+# UDP port 8285 from Master & Worker Nodes for flannel overlay network - udp backend. This is the default network configuration
+# UDP port 8472 from Master & Worker Nodes 	flannel overlay network - vxlan backend (only required if using flannel)
 ###############################################################################
 
 resource "digitalocean_firewall" "k8s_worker" {
@@ -471,8 +479,12 @@ resource "digitalocean_firewall" "k8s_worker" {
 
 ###############################################################################
 #
-# master host firewall
+# master host inbound firewallrules
 #
+# TCP port 22 for debugging over ssh
+# TCP port 443 for accessing Kubernetes API server.
+# UDP port 8285 from Worker Nodes for flannel overlay network - udp backend.
+# UDP port 8472 from Worker Nodes for lannel overlay network - vxlan backend
 ###############################################################################
 
 resource "digitalocean_firewall" "k8s_master" {
