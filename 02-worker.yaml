@@ -37,7 +37,7 @@ write_files:
         ExecStart=/usr/lib/coreos/kubelet-wrapper \
           --anonymous-auth=false \
           --client-ca-file=/etc/kubernetes/ssl/ca.pem \
-          --api-servers=https://${MASTER_HOST} \
+          --require-kubeconfig \
           --network-plugin-dir=/etc/kubernetes/cni/net.d \
           --container-runtime=docker \
           --register-node=true \
@@ -104,6 +104,7 @@ write_files:
         clusters:
         - name: local
           cluster:
+            server: https://${MASTER_HOST}
             certificate-authority: /etc/kubernetes/ssl/ca.pem
         users:
         - name: kubelet

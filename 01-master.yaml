@@ -36,7 +36,8 @@ write_files:
         ExecStart=/usr/lib/coreos/kubelet-wrapper \
           --anonymous-auth=false \
           --client-ca-file=/etc/kubernetes/ssl/ca.pem \
-          --api-servers=http://127.0.0.1:8080 \
+          --kubeconfig=/etc/kubernetes/kubelet-kubeconfig.yaml \
+          --require-kubeconfig \
           --network-plugin-dir=/etc/kubernetes/cni/net.d \
           --container-runtime=docker \
           --allow-privileged=true \
@@ -52,6 +53,23 @@ write_files:
 
         [Install]
         WantedBy=multi-user.target
+  - path: "/etc/kubernetes/kubelet-kubeconfig.yaml"
+    permissions: "0755"
+    content: |
+      apiVersion: v1
+      kind: Config
+      clusters:
+      - name: local
+        cluster:
+          server: http://127.0.0.1:8080
+      users:
+      - name: kubelet
+      contexts:
+      - context:
+          cluster: local
+          user: kubelet
+        name: kubelet-context
+      current-context: kubelet-context
   - path: "/etc/kubernetes/manifests/kube-apiserver.yaml"
     permissions: "0755"
     content: |
