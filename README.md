@@ -17,7 +17,7 @@ With brew installed, all tools can be installed with
 brew install terraform cfssl kubectl 
 ```
 
-Do all the following steps from a development machine. It does not matter _where_ is it, as long as it is connected to the internet. This one will be subsequently used to access the cluster via `kubectl`.
+Do all the following steps from a development machine. It does not matter _where_ it is, as long as it is connected to the internet. This one will be subsequently used to access the cluster via `kubectl`.
 
 ## Generate private / public keys
 
