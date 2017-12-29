@@ -435,3 +435,16 @@ resource "null_resource" "deploy_microbot" {
 EOF
     }
 }
+
+resource "null_resource" "deploy_digitalocean_cloud_controller_manager" {
+    depends_on = ["null_resource.setup_kubectl"]
+    provisioner "local-exec" {
+        command = <<EOF
+            TOKEN=$(echo "${var.do_token}" | tr -d '\n' | base64)
+            sed -e "s/\$DO_ACCESS_TOKEN_BASE64/$TOKEN/" < ${path.module}/05-do-secret.yaml > ./secrets/05-do-secret.rendered.yaml
+            until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
+            kubectl create -f ./secrets/05-do-secret.rendered.yaml
+            kubectl create -f https://raw.githubusercontent.com/digitalocean/digitalocean-cloud-controller-manager/master/releases/v0.1.3.yml
+EOF
+    }
+}
