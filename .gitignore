@@ -11,3 +11,5 @@ secrets/
 *.tfstate
 *.tfstate.backup
 
+# Allow additional Terraform configuration, f.ex. to create tags
+/custom.tf
