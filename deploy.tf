@@ -167,7 +167,7 @@ resource "digitalocean_droplet" "k8s_worker" {
         inline = [
             "chmod +x /tmp/install-kubeadm.sh",
             "sudo /tmp/install-kubeadm.sh",
-            "export NODE_PRIVATE_IP=\"${self.ipv4_address}\"",
+            "export NODE_PRIVATE_IP=\"${self.ipv4_address_private}\"",
             "chmod +x /tmp/01-worker.sh",
             "sudo -E /tmp/01-worker.sh"
         ]
