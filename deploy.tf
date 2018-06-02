@@ -23,7 +23,7 @@ variable "ssh_private_key" {
 
 variable "number_of_workers" {}
 variable "hyperkube_version" {
-    default = "v1.8.4_coreos.0"
+    default = "v1.10.3_coreos.0"
 }
 
 variable "prefix" {
