@@ -13,6 +13,7 @@
 
 
 variable "do_token" {}
+
 variable "do_region" {
     default = "nyc3"
 }
@@ -21,9 +22,8 @@ variable "ssh_private_key" {
     default = "~/.ssh/id_rsa"
 }
 
-variable "number_of_workers" {}
-variable "hyperkube_version" {
-    default = "v1.8.4_coreos.0"
+variable "number_of_workers" {
+	default = "3"
 }
 
 variable "prefix" {
