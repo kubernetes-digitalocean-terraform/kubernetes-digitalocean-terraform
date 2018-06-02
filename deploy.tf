@@ -26,6 +26,14 @@ variable "number_of_workers" {
 	default = "3"
 }
 
+variable "k8s_version" {
+	default = "v1.10.3"
+}
+
+variable "cni_version" {
+	default = "v0.6.0"
+}
+
 variable "prefix" {
     default = ""
 }
@@ -89,8 +97,10 @@ resource "digitalocean_droplet" "k8s_master" {
     # Install dependencies and set up cluster
     provisioner "remote-exec" {
         inline = [
+            "export K8S_VERSION=\"${var.k8s_version}\"",
+            "export CNI_VERSION=\"${var.cni_version}\"",
             "chmod +x /tmp/install-kubeadm.sh",
-            "sudo /tmp/install-kubeadm.sh",
+            "sudo -E /tmp/install-kubeadm.sh",
             "export MASTER_PRIVATE_IP=\"${self.ipv4_address_private}\"",
             "export MASTER_PUBLIC_IP=\"${self.ipv4_address}\"",
             "chmod +x /tmp/00-master.sh",
@@ -165,8 +175,10 @@ resource "digitalocean_droplet" "k8s_worker" {
     # Install dependencies and join cluster
     provisioner "remote-exec" {
         inline = [
+            "export K8S_VERSION=\"${var.k8s_version}\"",
+            "export CNI_VERSION=\"${var.cni_version}\"",
             "chmod +x /tmp/install-kubeadm.sh",
-            "sudo /tmp/install-kubeadm.sh",
+            "sudo -E /tmp/install-kubeadm.sh",
             "export NODE_PRIVATE_IP=\"${self.ipv4_address_private}\"",
             "chmod +x /tmp/01-worker.sh",
             "sudo -E /tmp/01-worker.sh"
