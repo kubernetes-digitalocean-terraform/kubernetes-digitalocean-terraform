@@ -177,6 +177,15 @@ resource "digitalocean_droplet" "k8s_worker" {
             private_key = "${file(var.ssh_private_key)}"
         }
     }
+
+    provisioner "local-exec" {
+        when = "destroy"
+        command = <<EOF
+export KUBECONFIG=${path.module}/secrets/admin.conf
+kubectl drain --delete-local-data --force --ignore-daemonsets ${self.name}
+kubectl delete nodes/${self.name}
+EOF
+    }
 }
 
 # use kubeconfig retrieved from master
