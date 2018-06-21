@@ -41,10 +41,9 @@ ssh-add ~/.ssh/id_rsa
 
 We put our DigitalOcean token in the file `./secrets/DO_TOKEN` (this directory is mentioned in `.gitignore`, of course, so we don't leak it)
 
-Then we setup the environment variables (step into `this repository` root). Note that the first variable sets up the *number of workers*
+Then we setup the environment variables (step into `this repository` root).
 
 ```bash
-export TF_VAR_number_of_workers=3
 export TF_VAR_do_token=$(cat ./secrets/DO_TOKEN)
 export TF_VAR_ssh_fingerprint=$(ssh-keygen -E MD5 -lf ~/.ssh/id_rsa.pub | awk '{print $2}' | sed 's/MD5://g')
 ```
