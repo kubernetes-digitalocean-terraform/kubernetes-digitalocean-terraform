@@ -117,7 +117,7 @@ resource "digitalocean_droplet" "k8s_master" {
     provisioner "local-exec" {
         command =<<EOF
             scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.ssh_private_key} core@${digitalocean_droplet.k8s_master.ipv4_address}:"/tmp/kubeadm_join /etc/kubernetes/admin.conf" ${path.module}/secrets/
-            sed -i '.bak' "s/${self.ipv4_address_private}/${self.ipv4_address}/" ${path.module}/secrets/admin.conf
+            sed -i.bak "s/${self.ipv4_address_private}/${self.ipv4_address}/" ${path.module}/secrets/admin.conf
 EOF
     }
 
