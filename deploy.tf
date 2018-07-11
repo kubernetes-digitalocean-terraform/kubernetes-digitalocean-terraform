@@ -39,7 +39,7 @@ variable "prefix" {
 }
 
 variable "size_master" {
-    default = "2gb"
+    default = "1gb"
 }
 
 variable "size_worker" {
@@ -117,7 +117,7 @@ resource "digitalocean_droplet" "k8s_master" {
     provisioner "local-exec" {
         command =<<EOF
             scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.ssh_private_key} core@${digitalocean_droplet.k8s_master.ipv4_address}:"/tmp/kubeadm_join /etc/kubernetes/admin.conf" ${path.module}/secrets/
-            sed -i '.bak' "s/${self.ipv4_address_private}/${self.ipv4_address}/" ${path.module}/secrets/admin.conf
+            sed -i.bak "s/${self.ipv4_address_private}/${self.ipv4_address}/" ${path.module}/secrets/admin.conf
 EOF
     }
 
@@ -201,18 +201,6 @@ EOF
 }
 
 # use kubeconfig retrieved from master
-
-resource "null_resource" "deploy_microbot" {
-    depends_on = ["digitalocean_droplet.k8s_worker"]
-    provisioner "local-exec" {
-        command = <<EOF
-            export KUBECONFIG=${path.module}/secrets/admin.conf
-            sed -e "s/\$EXT_IP1/${digitalocean_droplet.k8s_worker.0.ipv4_address}/" < ${path.module}/02-microbot.yaml > ./secrets/02-microbot.rendered.yaml
-            until kubectl get pods 2>/dev/null; do printf '.'; sleep 5; done
-            kubectl create -f ./secrets/02-microbot.rendered.yaml
-EOF
-    }
-}
 
 resource "null_resource" "deploy_digitalocean_cloud_controller_manager" {
     depends_on = ["digitalocean_droplet.k8s_worker"]
