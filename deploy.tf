@@ -39,7 +39,7 @@ variable "prefix" {
 }
 
 variable "size_master" {
-    default = "2gb"
+    default = "1gb"
 }
 
 variable "size_worker" {

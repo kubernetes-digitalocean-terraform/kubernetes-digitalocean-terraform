@@ -1,3 +1,7 @@
+```
+. ./setup_terraform.sh <public_key_location> <do_token_location>
+```
+
 # Kubernetes - DigitalOcean - Terraform
 
 Deploy your Kubernetes cluster on DigitalOcean using Terraform.
